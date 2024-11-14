@@ -54,7 +54,7 @@ function Get-Context {
     }
 
     begin {
-        $Name = $PSBoundParameters.Name ?? '*'
+        $Name = $PSBoundParameters.Name
     }
 
     process {
@@ -76,7 +76,7 @@ function Get-Context {
         foreach ($context in $contexts) {
             [pscustomobject](
                 $context.Metadata + @{
-                    Name   = $context.Name -replace "$($script:Config.Name)"
+                    Name   = $context.Name -replace "^$($script:Config.Name)"
                     Secret = Get-Secret -Name $context.Name -Vault $contextVault.Name -AsPlainText:$AsPlainText
                 }
             )
