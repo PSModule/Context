@@ -1,4 +1,6 @@
-﻿function Get-ContextVault {
+﻿#Requires -Modules @{ ModuleName = 'Microsoft.PowerShell.SecretManagement'; RequiredVersion = '1.1.2' }
+
+function Get-ContextVault {
     <#
         .SYNOPSIS
         Retrieves the context vault.
