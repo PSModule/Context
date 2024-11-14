@@ -1,4 +1,7 @@
-﻿filter Remove-Context {
+﻿#Requires -Modules @{ ModuleName = 'DynamicParams'; RequiredVersion = '1.1.8' }
+#Requires -Modules @{ ModuleName = 'Microsoft.PowerShell.SecretManagement'; RequiredVersion = '1.1.2' }
+
+filter Remove-Context {
     <#
         .SYNOPSIS
         Remove a context from the context vault.
@@ -7,6 +10,9 @@
         This function removes a context from the vault. It supports removing a single context by name,
         multiple contexts using wildcard patterns, and can also accept input from the pipeline.
         If the specified context(s) exist, they will be removed from the vault.
+
+        .PARAMETER Name
+        The name of the secret vault.
 
         .EXAMPLE
         Remove-Context -Name 'MySecret'
@@ -25,24 +31,39 @@
     #>
     [OutputType([void])]
     [CmdletBinding(SupportsShouldProcess)]
-    param (
-        # The name of the secret vault.
-        [Parameter(
-            Mandatory,
-            ValueFromPipeline,
-            ValueFromPipelineByPropertyName
-        )]
-        [Alias('Context', 'ContextName')]
-        [string] $Name
-    )
+    param ()
 
-    $contextVault = Get-ContextVault
+    dynamicparam {
+        $dynamicParamDictionary = New-DynamicParamDictionary
 
-    $contexts = Get-Context -Name $Name
+        $nameParam = @{
+            Name                            = 'Name'
+            Alias                           = 'Context', 'ContextName'
+            Type                            = [string]
+            Mandatory                       = $true
+            ValueFromPipeline               = $true
+            ValueFromPipelineByPropertyName = $true
+            ValidateSet                     = (Get-Context).Name
+            DynamicParamDictionary          = $dynamicParamDictionary
+        }
+        New-DynamicParam @nameParam
 
-    foreach ($context in $contexts) {
-        if ($PSCmdlet.ShouldProcess('Remove-Secret', $context.Name)) {
-            Remove-Secret -Name $context.Name -Vault $contextVault.Name
+        return $dynamicParamDictionary
+    }
+
+    begin {
+        $Name = $PSBoundParameters.Name
+    }
+
+    process {
+        $contextVault = Get-ContextVault
+
+        $contexts = Get-Context -Name $Name
+
+        foreach ($context in $contexts) {
+            if ($PSCmdlet.ShouldProcess('Remove-Secret', $context.Name)) {
+                Remove-Secret -Name $context.Name -Vault $contextVault.Name
+            }
         }
     }
 }

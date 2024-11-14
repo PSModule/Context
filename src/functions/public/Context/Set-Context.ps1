@@ -1,4 +1,6 @@
-﻿function Set-Context {
+﻿#Requires -Modules @{ ModuleName = 'Microsoft.PowerShell.SecretManagement'; RequiredVersion = '1.1.2' }
+
+function Set-Context {
     <#
         .SYNOPSIS
         Set a context in the vault.
@@ -41,14 +43,14 @@
     $contextVault = Get-ContextVault
 
     $param = @{
-        Name  = $Name
+        Name  = $($script:Config.Name) + $Name
         Vault = $contextVault.Name
     }
 
     #Map secret based on type, to Secret or SecureStringSecret
     if ($Secret -is [System.Security.SecureString]) {
         $param['SecureStringSecret'] = $Secret
-    } elseif ($Secret -is [string]) {
+    } elseif ($Secret -is [System.String]) {
         $param['Secret'] = $Secret
     } else {
         throw 'Invalid secret type'
