@@ -1,5 +1,5 @@
-﻿#Requires -Modules Microsoft.PowerShell.SecretManagement
-#Requires -Modules Microsoft.PowerShell.SecretStore
+﻿#Requires -Modules @{ ModuleName = 'Microsoft.PowerShell.SecretManagement'; RequiredVersion = '1.1.2' }
+#Requires -Modules @{ ModuleName = 'Microsoft.PowerShell.SecretStore'; RequiredVersion = '1.0.6' }
 
 function Initialize-ContextVault {
     <#
