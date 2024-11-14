@@ -11,17 +11,3 @@ try {
     Write-Error $_
     throw "Failed to initialize secret vault"
 }
-
-Write-Verbose "Initialized secret vault [$($script:Config.Context.VaultName)] of type [$($script:Config.Context.VaultType)]"
-
-
-### This is the context config for this module
-$contextParams = @{
-    Name = $script:Config.Name
-}
-try {
-    Set-Context @contextParams
-} catch {
-    Write-Error $_
-    throw 'Failed to initialize secret vault'
-}
