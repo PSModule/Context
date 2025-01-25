@@ -115,7 +115,7 @@ Describe 'Functions' {
             $context.TwoFactorMethods | Should -Be @('TOTP', 'SMS')
             $context.LastLoginAttempts | Should -BeOfType [PSCustomObject]
             $context.LastLoginAttempts.Count | Should -Be 2
-            $context.UserPreferences | Should -BeOfType [System.Collections.Hashtable]
+            $context.UserPreferences | Should -BeOfType [PSCustomObject]
             $context.UserPreferences.Theme | Should -Be 'dark'
             $context.UserPreferences.DefaultBranch | Should -Be 'main'
             $context.UserPreferences.Notifications | Should -BeOfType [PSCustomObject]
