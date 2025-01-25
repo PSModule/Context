@@ -23,16 +23,13 @@ function Get-Context {
         Get all contexts that start with 'My' from the context vault (in memory).
     #>
     [OutputType([object])]
-    [CmdletBinding(DefaultParameterSetName = '__AllParameterSets')]
+    [CmdletBinding()]
     param(
         # The name of the context to retrieve from the vault.
-        [Parameter(
-            Mandatory,
-            ParameterSetName = 'ByID'
-        )]
+        [Parameter()]
         [AllowEmptyString()]
         [SupportsWildcards()]
-        [string] $ID
+        [string] $ID = '*'
     )
 
     begin {
@@ -46,16 +43,8 @@ function Get-Context {
 
     process {
         try {
-            switch ($PSCmdlet.ParameterSetName) {
-                'ByID' {
-                    Write-Debug "Retrieving contexts like [$ID]"
-                    return $script:Contexts.Values | Where-Object { $_.ID -like $ID }
-                }
-                '__AllParameterSets' {
-                    Write-Debug 'Retrieving all contexts'
-                    return $script:Contexts.Values
-                }
-            }
+            Write-Debug "Retrieving contexts like [$ID]"
+            return $script:Contexts.Values | Where-Object { $_.ID -like $ID }
         } catch {
             Write-Error $_
             throw 'Failed to get context'
