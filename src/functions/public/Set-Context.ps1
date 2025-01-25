@@ -38,6 +38,7 @@ function Set-Context {
     begin {
         $stackPath = Get-PSCallStackPath
         Write-Debug "[$stackPath] - Start"
+
         if (-not $script:Config.Initialized) {
             Set-ContextVault
             Import-Context
@@ -60,10 +61,9 @@ function Set-Context {
 
         $Name = "$($script:Config.SecretPrefix)$ID"
         $param = @{
-            Name    = $Name
-            Secret  = $secret
-            Vault   = $script:Config.VaultName
-            Verbose = $false
+            Name   = $Name
+            Secret = $secret
+            Vault  = $script:Config.VaultName
         }
         Write-Debug ($param | ConvertTo-Json -Depth 5)
 
