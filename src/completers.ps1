@@ -1,11 +1,9 @@
-﻿$usingIDFunctions = @('Get-Context', 'Set-Context', 'Remove-Context', 'Rename-Context')
-
-Register-ArgumentCompleter -CommandName $usingIDFunctions -ParameterName 'ID' -ScriptBlock {
+﻿Register-ArgumentCompleter -CommandName 'Get-Context', 'Set-Context', 'Remove-Context', 'Rename-Context' -ParameterName 'ID' -ScriptBlock {
     param($commandName, $parameterName, $wordToComplete, $commandAst, $fakeBoundParameter)
     $null = $commandName, $parameterName, $wordToComplete, $commandAst, $fakeBoundParameter
 
-    Get-ContextInfo | Where-Object { $_.ID -like "$wordToComplete*" } |
+    $script:Contexts.Values.ID | Where-Object { $_ -like "$wordToComplete*" } |
         ForEach-Object {
-            [System.Management.Automation.CompletionResult]::new($_.ID, $_.ID, 'ParameterValue', $_.ID)
+            [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_)
         }
 }

@@ -11,11 +11,23 @@
         Rename-Context -ID 'PSModule.GitHub' -NewID 'PSModule.GitHub2'
 
         Renames the context 'PSModule.GitHub' to 'PSModule.GitHub2'.
+
+        .EXAMPLE
+        'PSModule.GitHub' | Rename-Context -NewID 'PSModule.GitHub2'
+
+        Renames the context 'PSModule.GitHub' to 'PSModule.GitHub2'.
+
+        .LINK
+        https://psmodule.io/Context/Functions/Rename-Context/
     #>
     [CmdletBinding(SupportsShouldProcess)]
     param (
         # The ID of the context to rename.
-        [Parameter(Mandatory)]
+        [Parameter(
+            Mandatory,
+            ValueFromPipeline,
+            ValueFromPipelineByPropertyName
+        )]
         [string] $ID,
 
         # The new ID of the context.
@@ -30,7 +42,10 @@
     begin {
         $stackPath = Get-PSCallStackPath
         Write-Debug "[$stackPath] - Start"
-        Set-ContextVault
+
+        if (-not $script:Config.Initialized) {
+            Set-ContextVault
+        }
     }
 
     process {
@@ -46,7 +61,7 @@
 
         if ($PSCmdlet.ShouldProcess("Renaming context '$ID' to '$NewID'")) {
             try {
-                Set-Context -ID $NewID -Context $context
+                $context | Set-Context -ID $NewID
             } catch {
                 Write-Error $_
                 throw 'Failed to set new context'

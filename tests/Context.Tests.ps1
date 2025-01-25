@@ -13,19 +13,13 @@ BeforeAll {
     Write-Verbose "Vault: $($vault.Count)" -Verbose
     Write-Verbose ($vault | Format-Table | Out-String) -Verbose
     $vault | Unregister-SecretVault -Verbose
+    Import-Module -Name Context -Force -Verbose -Version 999.0.0
 }
 
 Describe 'Functions' {
     Context 'Function: Set-Context' {
         It "Set-Context -ID 'TestID1'" {
             { Set-Context -ID 'TestID1' } | Should -Not -Throw
-            $contextInfo = Get-ContextInfo
-            Write-Verbose ($contextInfo | Out-String) -Verbose
-            $contextInfo.Count | Should -Be 1
-            $contextInfo[0].ID | Should -Be 'TestID1'
-            $contextInfo[0].SecretName | Should -Be 'Context:TestID1'
-
-
             $result = Get-Context -ID 'TestID1'
             Write-Verbose ($result | Out-String) -Verbose
             $result | Should -Not -BeNullOrEmpty
@@ -33,10 +27,6 @@ Describe 'Functions' {
         }
         It "Set-Context -ID 'TestID2' -Context @{}" {
             { Set-Context -ID 'TestID2' -Context @{} } | Should -Not -Throw
-            $contextInfo = Get-ContextInfo
-            Write-Verbose ($contextInfo | Out-String) -Verbose
-            $contextInfo.Count | Should -Be 2
-
             $result = Get-Context -ID 'TestID2'
             $result | Should -Not -BeNullOrEmpty
             $result.ID | Should -Be 'TestID2'
@@ -47,16 +37,128 @@ Describe 'Functions' {
             $result | Should -Not -BeNullOrEmpty
             $result.ID | Should -Be 'TestID2'
         }
+        It "Set-Context -ID 'john_doe' -Context [advanced object]" {
+            $contextData = [PSCustomObject]@{
+                Username          = 'john_doe'
+                AuthToken         = 'ghp_12345ABCDE67890FGHIJ' | ConvertTo-SecureString -AsPlainText -Force #gitleaks:allow
+                LoginTime         = Get-Date
+                IsTwoFactorAuth   = $true
+                TwoFactorMethods  = @('TOTP', 'SMS')
+                LastLoginAttempts = @(
+                    [PSCustomObject]@{
+                        Timestamp = (Get-Date).AddHours(-1)
+                        IP        = '192.168.1.101' | ConvertTo-SecureString -AsPlainText -Force
+                        Success   = $true
+                    },
+                    [PSCustomObject]@{
+                        Timestamp = (Get-Date).AddDays(-1)
+                        IP        = '203.0.113.5' | ConvertTo-SecureString -AsPlainText -Force
+                        Success   = $false
+                    }
+                )
+                UserPreferences   = @{
+                    Theme         = 'dark'
+                    DefaultBranch = 'main'
+                    Notifications = [PSCustomObject]@{
+                        Email = $true
+                        Push  = $false
+                        SMS   = $true
+                    }
+                    CodeReview    = @('PR Comments', 'Inline Suggestions')
+                }
+                Repositories      = @(
+                    [PSCustomObject]@{
+                        Name        = 'Repo1'
+                        IsPrivate   = $true
+                        CreatedDate = (Get-Date).AddMonths(-6)
+                        Stars       = 42
+                        Languages   = @('Python', 'JavaScript')
+                    },
+                    [PSCustomObject]@{
+                        Name        = 'Repo2'
+                        IsPrivate   = $false
+                        CreatedDate = (Get-Date).AddYears(-1)
+                        Stars       = 130
+                        Languages   = @('C#', 'HTML', 'CSS')
+                    }
+                )
+                AccessScopes      = @('repo', 'user', 'gist', 'admin:org')
+                ApiRateLimits     = [PSCustomObject]@{
+                    Limit     = 5000
+                    Remaining = 4985
+                    ResetTime = (Get-Date).AddMinutes(30)
+                }
+                SessionMetaData   = [PSCustomObject]@{
+                    SessionID   = 'sess_abc123'
+                    Device      = 'Windows-PC'
+                    Location    = [PSCustomObject]@{
+                        Country = 'USA'
+                        City    = 'New York'
+                    }
+                    BrowserInfo = [PSCustomObject]@{
+                        Name    = 'Chrome'
+                        Version = '118.0.1'
+                    }
+                }
+            }
+
+            { Set-Context -ID 'john_doe' -Context $contextData } | Should -Not -Throw
+            $context = Get-Context -ID 'john_doe'
+            $context | Should -Not -BeNullOrEmpty
+            $context.ID | Should -Be 'john_doe'
+            $context.Username | Should -Be 'john_doe'
+            $context.AuthToken | Should -BeOfType [System.Security.SecureString]
+            $context.AuthToken | ConvertFrom-SecureString -AsPlainText | Should -Be 'ghp_12345ABCDE67890FGHIJ'
+            $context.LoginTime | Should -BeOfType [System.DateTime]
+            $context.IsTwoFactorAuth | Should -Be $true
+            $context.TwoFactorMethods | Should -Be @('TOTP', 'SMS')
+            $context.LastLoginAttempts | Should -BeOfType [PSCustomObject]
+            $context.LastLoginAttempts.Count | Should -Be 2
+            $context.UserPreferences | Should -BeOfType [PSCustomObject]
+            $context.UserPreferences.Theme | Should -Be 'dark'
+            $context.UserPreferences.DefaultBranch | Should -Be 'main'
+            $context.UserPreferences.Notifications | Should -BeOfType [PSCustomObject]
+            $context.UserPreferences.Notifications.Email | Should -Be $true
+            $context.UserPreferences.Notifications.Push | Should -Be $false
+            $context.UserPreferences.Notifications.SMS | Should -Be $true
+            $context.UserPreferences.CodeReview | Should -Be @('PR Comments', 'Inline Suggestions')
+            $context.Repositories | Should -BeOfType [PSCustomObject]
+            $context.Repositories.Count | Should -Be 2
+            $context.AccessScopes | Should -BeOfType [PSCustomObject]
+            $context.AccessScopes.Count | Should -Be 4
+            $context.ApiRateLimits | Should -BeOfType [PSCustomObject]
+            $context.ApiRateLimits.Limit | Should -Be 5000
+            $context.ApiRateLimits.Remaining | Should -Be 4985
+            $context.ApiRateLimits.ResetTime | Should -BeOfType [System.DateTime]
+            $context.SessionMetaData | Should -BeOfType [PSCustomObject]
+            $context.SessionMetaData.SessionID | Should -Be 'sess_abc123'
+            $context.SessionMetaData.Device | Should -Be 'Windows-PC'
+            $context.SessionMetaData.Location | Should -BeOfType [PSCustomObject]
+            $context.SessionMetaData.Location.Country | Should -Be 'USA'
+            $context.SessionMetaData.Location.City | Should -Be 'New York'
+            $context.SessionMetaData.BrowserInfo | Should -BeOfType [PSCustomObject]
+            $context.SessionMetaData.BrowserInfo.Name | Should -Be 'Chrome'
+            $context.SessionMetaData.BrowserInfo.Version | Should -Be '118.0.1'
+        }
+        # It "Get-Context -> Update -> Set-Context - Updates the context" {
+        #     Set-Context -ID 'JimmyDoe' -Context @{
+        #         Name  = 'Jimmy Doe'
+        #         Email = 'JD@example.com'
+        #     }
+        #     $context = Get-Context -ID 'JimmyDoe'
+        #     $context.Name = 'Jimmy Doe Jr.'
+        #     $context | Set-Context
+        # }
     }
 
     Context 'Function: Get-Context' {
         It 'Get-Context - Should return all contexts' {
             Write-Verbose (Get-Context | Out-String) -Verbose
-            (Get-Context).Count | Should -Be 2
+            (Get-Context).Count | Should -Be 3
         }
         It "Get-Context -ID '*' - Should return all contexts" {
             Write-Verbose (Get-Context -ID '*' | Out-String) -Verbose
-            (Get-Context -ID '*').Count | Should -Be 2
+            (Get-Context -ID '*').Count | Should -Be 3
         }
         It "Get-Context -ID 'TestID*' - Should return all contexts" {
             Write-Verbose (Get-Context -ID 'TestID*' | Out-String) -Verbose
@@ -91,21 +193,26 @@ Describe 'Functions' {
             } | Should -Not -Throw
             (Get-Context -ID 'Temp*').Count | Should -Be 0
         }
+
+        It "Remove-Context -ID 'NonExistentContext' - Should not throw" {
+            { Remove-Context -ID 'NonExistentContext' } | Should -Not -Throw
+        }
+
+        It "'john_doe' | Remove-Context - Should remove the context" {
+            { 'john_doe' | Remove-Context } | Should -Not -Throw
+            Get-Context -ID 'john_doe' | Should -BeNullOrEmpty
+        }
     }
 
     Context 'Function: Rename-Context' {
         BeforeEach {
             # Ensure no contexts exist before starting tests
-            Get-Context | ForEach-Object {
-                Remove-Context -ID $_.ID
-            }
+            Get-Context | Remove-Context
         }
 
         AfterEach {
             # Cleanup any contexts created during tests
-            Get-Context | ForEach-Object {
-                Remove-Context -ID $_.ID
-            }
+            Get-Context | Remove-Context
         }
 
         It 'Renames the context successfully' {
@@ -144,44 +251,6 @@ Describe 'Functions' {
 
             # Attempt to rename the context to an existing context
             { Rename-Context -ID 'TestContext' -NewID $existingID -Force } | Should -Not -Throw
-        }
-    }
-
-    Context 'Function: Get-ContextInfo' {
-        BeforeAll {
-            Get-ContextInfo | ForEach-Object {
-                Remove-Context -ID $_.ID
-            }
-            Set-Context -ID 'SomethingElse'
-            Set-Context -ID 'SomethingElse2'
-            Set-Context -ID 'SomethingElse3'
-            Set-Context -ID 'SomethingOther'
-            Set-Context -ID 'NothingElse'
-            Set-Context -ID 'NothingElse2'
-        }
-        It 'Get-ContextInfo - Should return all context info' {
-            Write-Verbose (Get-ContextInfo | Out-String) -Verbose
-            (Get-ContextInfo).Count | Should -Be 6
-        }
-        It "Get-ContextInfo -ID 'TestID*' - Should return all context info" {
-            Write-Verbose (Get-ContextInfo -ID 'TestID*' | Out-String) -Verbose
-            (Get-ContextInfo -ID 'TestID*').Count | Should -Be 0
-        }
-        It "Get-ContextInfo -ID 'Something*' - Should return all context info" {
-            Write-Verbose (Get-ContextInfo -ID 'Something*' | Out-String) -Verbose
-            (Get-ContextInfo -ID 'Something*').Count | Should -Be 4
-        }
-        It "Get-ContextInfo -ID 'Nothing*' - Should return all context info" {
-            Write-Verbose (Get-ContextInfo -ID 'Nothing*' | Out-String) -Verbose
-            (Get-ContextInfo -ID 'Nothing*').Count | Should -Be 2
-        }
-        It "Get-ContextInfo -ID 'NothingElse' - Should return all context info" {
-            Write-Verbose (Get-ContextInfo -ID 'NothingElse' | Out-String) -Verbose
-            (Get-ContextInfo -ID 'NothingElse').Count | Should -Be 1
-        }
-        It "Get-ContextInfo -ID '*Else*' - Should return all context info containing 'Else'" {
-            Write-Verbose (Get-ContextInfo -ID '*Else*' | Out-String) -Verbose
-            (Get-ContextInfo -ID '*Else*').Count | Should -Be 5
         }
     }
 }

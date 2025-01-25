@@ -7,6 +7,7 @@ function Set-Context {
 
         .DESCRIPTION
         If the context does not exist, it will be created. If it already exists, it will be updated.
+        The context is cached in memory for faster access.
 
         .EXAMPLE
         Set-Context -ID 'PSModule.GitHub' -Context @{ Name = 'MySecret' }
@@ -17,16 +18,19 @@ function Set-Context {
         Set-Context -ID 'PSModule.GitHub' -Context @{ Name = 'MySecret'; AccessToken = '123123123' }
 
         Creates a context called 'MySecret' in the vault with the settings.
+
+        .LINK
+        https://psmodule.io/Context/Functions/Set-Context/
     #>
     [OutputType([object])]
     [CmdletBinding(SupportsShouldProcess)]
     param(
         # The ID of the context.
-        [Parameter(Mandatory)]
+        [Parameter(ValueFromPipelineByPropertyName)]
         [string] $ID,
 
         # The data of the context.
-        [Parameter()]
+        [Parameter(ValueFromPipeline)]
         [object] $Context = @{},
 
         # Pass the context through the pipeline.
@@ -37,12 +41,19 @@ function Set-Context {
     begin {
         $stackPath = Get-PSCallStackPath
         Write-Debug "[$stackPath] - Start"
-        Set-ContextVault
-        $vaultName = $script:Config.VaultName
-        $secretPrefix = $script:Config.SecretPrefix
+
+        if (-not $script:Config.Initialized) {
+            Set-ContextVault
+        }
     }
 
     process {
+        if (-not $ID) {
+            $ID = $Context.ID
+        }
+        if (-not $ID) {
+            throw 'ID is required in either the ID parameter or the Context object'
+        }
         try {
             $secret = ConvertTo-ContextJson -Context $Context -ID $ID
         } catch {
@@ -50,17 +61,19 @@ function Set-Context {
             throw 'Failed to convert context to JSON'
         }
 
+        $Name = "$($script:Config.SecretPrefix)$ID"
         $param = @{
-            Name    = "$secretPrefix$ID"
-            Secret  = $secret
-            Vault   = $vaultName
-            Verbose = $false
+            Name   = $Name
+            Secret = $secret
+            Vault  = $script:Config.VaultName
         }
         Write-Debug ($param | ConvertTo-Json -Depth 5)
 
         try {
-            if ($PSCmdlet.ShouldProcess($ID, 'Set Secret')) {
+            if ($PSCmdlet.ShouldProcess($Name, 'Set Secret')) {
                 Set-Secret @param
+                $data = ConvertFrom-ContextJson -JsonString $secret
+                $script:Contexts[$Name] = $data
             }
         } catch {
             Write-Error $_
@@ -68,7 +81,7 @@ function Set-Context {
         }
 
         if ($PassThru) {
-            ConvertFrom-ContextJson -JsonString $secret
+            $data
         }
     }
 

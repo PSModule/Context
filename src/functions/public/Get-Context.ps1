@@ -1,60 +1,57 @@
-#Requires -Modules @{ ModuleName = 'Microsoft.PowerShell.SecretManagement'; RequiredVersion = '1.1.2' }
-
-filter Get-Context {
+function Get-Context {
     <#
         .SYNOPSIS
-        Retrieves a context from the context vault.
+        Gets a context.
 
         .DESCRIPTION
-        Retrieves a context from the context vault.
-        If no name is specified, all contexts from the context vault will be retrieved.
+        Gets a context from the loaded contexts that are in memory.
+        If no name is specified, all contexts will be returned.
 
         .EXAMPLE
         Get-Context
 
-        Get all contexts from the context vault.
+        Get all contexts from the context vault (in memory).
 
         .EXAMPLE
         Get-Context -ID 'MySecret'
 
-        Get the context called 'MySecret' from the vault.
+        Get the context called 'MySecret' from the context vault (in memory).
+
+        .EXAMPLE
+        Get-Context -ID 'My*'
+
+        Get all contexts that start with 'My' from the context vault (in memory).
+
+        .LINK
+        https://psmodule.io/Context/Functions/Get-Context/
     #>
     [OutputType([object])]
     [CmdletBinding()]
     param(
         # The name of the context to retrieve from the vault.
-        [Parameter()]
+        [Parameter(
+            ValueFromPipeline,
+            ValueFromPipelineByPropertyName
+        )]
+        [AllowEmptyString()]
         [SupportsWildcards()]
-        [string] $ID
+        [string[]] $ID = '*'
     )
 
     begin {
         $stackPath = Get-PSCallStackPath
         Write-Debug "[$stackPath] - Start"
-        Set-ContextVault
-        $vaultName = $script:Config.VaultName
-        $contextInfos = Get-ContextInfo
+
+        if (-not $script:Config.Initialized) {
+            Set-ContextVault
+        }
     }
 
     process {
         try {
-            if (-not $PSBoundParameters.ContainsKey('ID')) {
-                Write-Debug "Retrieving all contexts from [$vaultName]"
-            } elseif ([string]::IsNullOrEmpty($ID)) {
-                Write-Debug "Return 0 contexts from [$vaultName]"
-                return
-            } elseif ($ID.Contains('*')) {
-                Write-Debug "Retrieving contexts like [$ID] from [$vaultName]"
-                $contextInfos = $contextInfos | Where-Object { $_.ID -like $ID }
-            } else {
-                Write-Debug "Retrieving context [$ID] from [$vaultName]"
-                $contextInfos = $contextInfos | Where-Object { $_.ID -eq $ID }
-            }
-
-            Write-Debug "Found [$($contextInfos.Count)] contexts in [$vaultName]"
-            $contextInfos | ForEach-Object {
-                $contextJson = Get-Secret -Name $_.SecretName -Vault $vaultName -AsPlainText -Verbose:$false
-                ConvertFrom-ContextJson -JsonString $contextJson
+            foreach ($item in $ID) {
+                Write-Debug "Retrieving contexts like [$item]"
+                $script:Contexts.Values | Where-Object { $_.ID -like $item }
             }
         } catch {
             Write-Error $_

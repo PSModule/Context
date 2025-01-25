@@ -86,6 +86,7 @@ function Set-ContextVault {
             }
             $script:Config.VaultName = $vault.Name
             Write-Debug "Connected to context vault [$($script:Config.VaultName)]"
+            $script:Config.Initialized = $true
         } catch {
             Write-Error $_
             throw 'Failed to initialize context vault'
@@ -97,5 +98,6 @@ function Set-ContextVault {
 
     end {
         Write-Debug "[$stackPath] - End"
+        Import-Context
     }
 }
