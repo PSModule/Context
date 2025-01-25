@@ -1,7 +1,7 @@
 ﻿#Requires -Modules @{ ModuleName = 'DynamicParams'; RequiredVersion = '1.1.8' }
 #Requires -Modules @{ ModuleName = 'Microsoft.PowerShell.SecretManagement'; RequiredVersion = '1.1.2' }
 
-filter Remove-Context {
+function Remove-Context {
     <#
         .SYNOPSIS
         Removes a context from the context vault.
