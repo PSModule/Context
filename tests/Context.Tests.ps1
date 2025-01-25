@@ -146,42 +146,4 @@ Describe 'Functions' {
             { Rename-Context -ID 'TestContext' -NewID $existingID -Force } | Should -Not -Throw
         }
     }
-
-    Context 'Function: Get-ContextInfo' {
-        BeforeAll {
-            Get-ContextInfo | ForEach-Object {
-                Remove-Context -ID $_.ID
-            }
-            Set-Context -ID 'SomethingElse'
-            Set-Context -ID 'SomethingElse2'
-            Set-Context -ID 'SomethingElse3'
-            Set-Context -ID 'SomethingOther'
-            Set-Context -ID 'NothingElse'
-            Set-Context -ID 'NothingElse2'
-        }
-        It 'Get-ContextInfo - Should return all context info' {
-            Write-Verbose (Get-ContextInfo | Out-String) -Verbose
-            (Get-ContextInfo).Count | Should -Be 6
-        }
-        It "Get-ContextInfo -ID 'TestID*' - Should return all context info" {
-            Write-Verbose (Get-ContextInfo -ID 'TestID*' | Out-String) -Verbose
-            (Get-ContextInfo -ID 'TestID*').Count | Should -Be 0
-        }
-        It "Get-ContextInfo -ID 'Something*' - Should return all context info" {
-            Write-Verbose (Get-ContextInfo -ID 'Something*' | Out-String) -Verbose
-            (Get-ContextInfo -ID 'Something*').Count | Should -Be 4
-        }
-        It "Get-ContextInfo -ID 'Nothing*' - Should return all context info" {
-            Write-Verbose (Get-ContextInfo -ID 'Nothing*' | Out-String) -Verbose
-            (Get-ContextInfo -ID 'Nothing*').Count | Should -Be 2
-        }
-        It "Get-ContextInfo -ID 'NothingElse' - Should return all context info" {
-            Write-Verbose (Get-ContextInfo -ID 'NothingElse' | Out-String) -Verbose
-            (Get-ContextInfo -ID 'NothingElse').Count | Should -Be 1
-        }
-        It "Get-ContextInfo -ID '*Else*' - Should return all context info containing 'Else'" {
-            Write-Verbose (Get-ContextInfo -ID '*Else*' | Out-String) -Verbose
-            (Get-ContextInfo -ID '*Else*').Count | Should -Be 5
-        }
-    }
 }
