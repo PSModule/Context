@@ -18,10 +18,13 @@ filter Get-Context {
         Get the context called 'MySecret' from the context vault (in memory).
     #>
     [OutputType([object])]
-    [CmdletBinding()]
+    [CmdletBinding(DefaultParameterSetName = '__AllParameterSets')]
     param(
         # The name of the context to retrieve from the vault.
-        [Parameter()]
+        [Parameter(
+            Mandatory,
+            ParameterSetName = 'ByID'
+        )]
         [SupportsWildcards()]
         [string] $ID
     )
@@ -37,18 +40,15 @@ filter Get-Context {
 
     process {
         try {
-            if (-not $PSBoundParameters.ContainsKey('ID')) {
-                Write-Debug "Retrieving all contexts"
-                $script:Contexts.Values
-            } elseif ([string]::IsNullOrEmpty($ID)) {
-                Write-Debug "Return 0 contexts"
-                return
-            } elseif ($ID.Contains('*')) {
-                Write-Debug "Retrieving contexts like [$ID]"
-                $script:Contexts.Values | Where-Object { $_.ID -like $ID }
-            } else {
-                Write-Debug "Retrieving context [$ID]"
-                $script:Contexts.Values | Where-Object { $_.ID -eq $ID }
+            switch ($PSCmdlet.ParameterSetName) {
+                'ByID' {
+                    Write-Debug "Retrieving contexts like [$ID]"
+                    return $script:Contexts.Values | Where-Object { $_.ID -like $ID }
+                }
+                '__AllParameterSets' {
+                    Write-Debug 'Retrieving all contexts'
+                    return $script:Contexts.Values
+                }
             }
         } catch {
             Write-Error $_

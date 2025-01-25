@@ -63,7 +63,8 @@ function Set-Context {
         try {
             if ($PSCmdlet.ShouldProcess($Name, 'Set Secret')) {
                 Set-Secret @param
-                $script:Contexts[$Name] = $Context
+                $data = ConvertFrom-ContextJson -JsonString $secret
+                $script:Contexts[$Name] = $data
             }
         } catch {
             Write-Error $_
@@ -71,7 +72,7 @@ function Set-Context {
         }
 
         if ($PassThru) {
-            ConvertFrom-ContextJson -JsonString $secret
+            $data
         }
     }
 
