@@ -46,7 +46,7 @@ function Remove-Context {
     }
 
     process {
-        $InputObject
+        Write-Debug $InputObject
         try {
             if ($PSCmdlet.ShouldProcess($ID, 'Remove secret')) {
                 $script:Contexts.GetEnumerator() | Where-Object { $_.Value.ID -eq $ID } | ForEach-Object {
