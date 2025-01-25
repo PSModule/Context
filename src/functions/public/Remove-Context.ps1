@@ -60,7 +60,7 @@ function Remove-Context {
         try {
             foreach ($item in $ID) {
                 Write-Debug "Processing ID [$item]"
-                Write-Debug "Contexts: $($script:Contexts.Values)"
+                Write-Debug ($script:Contexts.GetEnumerator() | Format-List | Out-String)
                 $list = $script:Contexts.GetEnumerator() | Where-Object { $_.Value.ID -like $item }
                 Write-Debug "Found contexts: $($list.Count)"
                 $list | ForEach-Object {
