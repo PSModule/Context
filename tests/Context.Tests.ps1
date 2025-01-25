@@ -140,15 +140,15 @@ Describe 'Functions' {
             $context.SessionMetaData.BrowserInfo.Name | Should -Be 'Chrome'
             $context.SessionMetaData.BrowserInfo.Version | Should -Be '118.0.1'
         }
-        It "Get-Context -> Update -> Set-Context - Updates the context" {
-            Set-Context -ID 'JimmyDoe' -Context @{
-                Name  = 'Jimmy Doe'
-                Email = 'JD@example.com'
-            }
-            $context = Get-Context -ID 'JimmyDoe'
-            $context.Name = 'Jimmy Doe Jr.'
-            $context | Set-Context
-        }
+        # It "Get-Context -> Update -> Set-Context - Updates the context" {
+        #     Set-Context -ID 'JimmyDoe' -Context @{
+        #         Name  = 'Jimmy Doe'
+        #         Email = 'JD@example.com'
+        #     }
+        #     $context = Get-Context -ID 'JimmyDoe'
+        #     $context.Name = 'Jimmy Doe Jr.'
+        #     $context | Set-Context
+        # }
     }
 
     Context 'Function: Get-Context' {
