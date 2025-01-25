@@ -27,6 +27,7 @@ function Remove-Context {
         # The name of the context to remove from the vault.
         [Parameter(
             Mandatory,
+            ValueFromPipeline,
             ValueFromPipelineByPropertyName
         )]
         [string[]] $ID
