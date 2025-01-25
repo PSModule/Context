@@ -109,7 +109,7 @@ Describe 'Functions' {
             $context.ID | Should -Be 'john_doe'
             $context.Username | Should -Be 'john_doe'
             $context.AuthToken | Should -BeOfType [System.Security.SecureString]
-            { $context.AuthToken | ConvertFrom-SecureString -AsPlainText } | Should -Be 'ghp_12345ABCDE67890FGHIJ'
+            $context.AuthToken | ConvertFrom-SecureString -AsPlainText | Should -Be 'ghp_12345ABCDE67890FGHIJ'
             $context.LoginTime | Should -BeOfType [System.DateTime]
             $context.IsTwoFactorAuth | Should -Be $true
             $context.TwoFactorMethods | Should -Be @('TOTP', 'SMS')
@@ -140,6 +140,7 @@ Describe 'Functions' {
             $context.SessionMetaData.BrowserInfo | Should -BeOfType [System.Object]
             $context.SessionMetaData.BrowserInfo.Name | Should -Be 'Chrome'
             $context.SessionMetaData.BrowserInfo.Version | Should -Be '118.0.1'
+            'john_doe' | Remove-Context
         }
     }
 
