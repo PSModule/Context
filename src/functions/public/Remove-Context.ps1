@@ -34,26 +34,15 @@ function Remove-Context {
 
         Accepts pipeline input: multiple objects each having an ID property
     #>
-    [CmdletBinding(
-        SupportsShouldProcess,
-        DefaultParameterSetName = 'ByID'
-    )]
+    [CmdletBinding(SupportsShouldProcess)]
     param(
         # One or more IDs as string of the contexts to remove.
         [Parameter(
-            ParameterSetName = 'ByID',
             Mandatory,
+            ValueFromPipeline,
             ValueFromPipelineByPropertyName
         )]
-        [string[]] $ID,
-
-        # One or more contexts as objects to remove.
-        [Parameter(
-            ParameterSetName = 'ByInputObject',
-            Mandatory,
-            ValueFromPipeline
-        )]
-        [object[]] $InputObject
+        [string[]] $ID
     )
 
     begin {
@@ -69,15 +58,8 @@ function Remove-Context {
 
     process {
         try {
-            $list = switch ($PSCmdlet.ParameterSetName) {
-                'ByID' {
-                    $ID
-                }
-                'ByInputObject' {
-                    $InputObject.ID
-                }
-            }
-            foreach ($item in $list) {
+            foreach ($item in $ID) {
+                Write-Debug "Processing ID [$item]"
                 $script:Contexts.Values | Where-Object { $_.ID -like $item } | ForEach-Object {
                     $name = $_.Key
                     Write-Debug "Removing context [$name]"
