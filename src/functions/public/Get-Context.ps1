@@ -26,7 +26,11 @@ function Get-Context {
     [CmdletBinding(DefaultParameterSetName = '__AllParameterSets')]
     param(
         # The name of the context to retrieve from the vault.
-        [Parameter(ParameterSetName = 'ByID')]
+        [Parameter(
+            Mandatory,
+            ParameterSetName = 'ByID'
+        )]
+        [AllowEmptyString()]
         [SupportsWildcards()]
         [string] $ID
     )
