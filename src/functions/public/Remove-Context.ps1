@@ -6,40 +6,61 @@ function Remove-Context {
         Removes a context from the context vault.
 
         .DESCRIPTION
-        This function removes a context from the vault. It supports removing a single context by name,
-        multiple contexts using wildcard patterns, and can also accept input from the pipeline.
-        If the specified context(s) exist, they will be removed from the vault.
-
-        .EXAMPLE
-        Remove-Context
-
-        Removes all contexts from the vault.
+        This function removes a context (or multiple contexts) from the vault. It supports:
+        - Supply one or more IDs as strings (e.g. -ID 'Ctx1','Ctx2')
+        - Supply objects that contain an ID property
 
         .EXAMPLE
         Remove-Context -ID 'MySecret'
 
-        Removes the context called 'MySecret' from the vault.
+        Removes a context called 'MySecret' by specifying its ID
 
         .EXAMPLE
-        Remove-Context -ID 'MySecret'
+        Remove-Context -ID 'Ctx1','Ctx2'
 
-        Removes the context called 'MySecret' from the vault.
+        Removes two contexts, 'Ctx1' and 'Ctx2'
+
+        .EXAMPLE
+        'Ctx1','Ctx2' | Remove-Context
+
+        Removes two contexts, 'Ctx1' and 'Ctx2'
+
+        .EXAMPLE
+        $ctxList = @(
+            [PSCustomObject]@{ ID = 'Ctx1' },
+            [PSCustomObject]@{ ID = 'Ctx2' }
+        )
+        $ctxList | Remove-Context
+
+        Accepts pipeline input: multiple objects each having an ID property
     #>
-    [OutputType([void])]
-    [CmdletBinding(SupportsShouldProcess)]
+    [CmdletBinding(
+        SupportsShouldProcess,
+        DefaultParameterSetName = 'ByID'
+    )]
     param(
-        # The name of the context to remove from the vault.
+        # One or more IDs as string of the contexts to remove.
         [Parameter(
+            ParameterSetName = 'ByID',
             Mandatory,
             ValueFromPipelineByPropertyName
         )]
-        [SupportsWildcards()]
-        [string] $ID
+        [string[]] $ID,
+
+        # One or more contexts as objects to remove.
+        [Parameter(
+            ParameterSetName = 'ByInputObject',
+            Mandatory,
+            ValueFromPipeline
+        )]
+        [object[]] $InputObject
     )
 
     begin {
         $stackPath = Get-PSCallStackPath
-        Write-Debug "[$stackPath] - Start"
+        Write-Debug "[$stackPath] - Begin"
+
+        # Example: ensure your vault/contexts are initialized once
         if (-not $script:Config.Initialized) {
             Set-ContextVault
             Import-Context
@@ -48,12 +69,22 @@ function Remove-Context {
 
     process {
         try {
-            if ($PSCmdlet.ShouldProcess($ID, 'Remove secret')) {
-                $script:Contexts.Values | Where-Object { $_.ID -like $ID } | ForEach-Object {
-                    Write-Debug "Removing context [$ID]"
+            $list = switch ($PSCmdlet.ParameterSetName) {
+                'ByID' {
+                    $ID
+                }
+                'ByInputObject' {
+                    $InputObject.ID
+                }
+            }
+            foreach ($item in $list) {
+                $script:Contexts.Values | Where-Object { $_.ID -like $item } | ForEach-Object {
                     $name = $_.Key
-                    Remove-Secret -Name $name -Vault $script:Config.VaultName -Verbose:$false
-                    $script:Contexts.Remove($name)
+                    Write-Debug "Removing context [$name]"
+                    if ($PSCmdlet.ShouldProcess($item, 'Remove secret')) {
+                        Remove-Secret -Name $name -Vault $script:Config.VaultName -Verbose:$false
+                        $script:Contexts.Remove($name)
+                    }
                 }
             }
         } catch {
