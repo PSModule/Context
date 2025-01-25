@@ -113,31 +113,31 @@ Describe 'Functions' {
             $context.LoginTime | Should -BeOfType [System.DateTime]
             $context.IsTwoFactorAuth | Should -Be $true
             $context.TwoFactorMethods | Should -Be @('TOTP', 'SMS')
-            $context.LastLoginAttempts | Should -BeOfType [System.Object[]]
+            $context.LastLoginAttempts | Should -BeOfType [PSCustomObject]
             $context.LastLoginAttempts.Count | Should -Be 2
             $context.UserPreferences | Should -BeOfType [System.Collections.Hashtable]
             $context.UserPreferences.Theme | Should -Be 'dark'
             $context.UserPreferences.DefaultBranch | Should -Be 'main'
-            $context.UserPreferences.Notifications | Should -BeOfType [System.Object]
+            $context.UserPreferences.Notifications | Should -BeOfType [PSCustomObject]
             $context.UserPreferences.Notifications.Email | Should -Be $true
             $context.UserPreferences.Notifications.Push | Should -Be $false
             $context.UserPreferences.Notifications.SMS | Should -Be $true
             $context.UserPreferences.CodeReview | Should -Be @('PR Comments', 'Inline Suggestions')
-            $context.Repositories | Should -BeOfType [System.Object[]]
+            $context.Repositories | Should -BeOfType [PSCustomObject]
             $context.Repositories.Count | Should -Be 2
-            $context.AccessScopes | Should -BeOfType [System.Object[]]
+            $context.AccessScopes | Should -BeOfType [PSCustomObject]
             $context.AccessScopes.Count | Should -Be 4
-            $context.ApiRateLimits | Should -BeOfType [System.Object]
+            $context.ApiRateLimits | Should -BeOfType [PSCustomObject]
             $context.ApiRateLimits.Limit | Should -Be 5000
             $context.ApiRateLimits.Remaining | Should -Be 4985
             $context.ApiRateLimits.ResetTime | Should -BeOfType [System.DateTime]
-            $context.SessionMetaData | Should -BeOfType [System.Object]
+            $context.SessionMetaData | Should -BeOfType [PSCustomObject]
             $context.SessionMetaData.SessionID | Should -Be 'sess_abc123'
             $context.SessionMetaData.Device | Should -Be 'Windows-PC'
-            $context.SessionMetaData.Location | Should -BeOfType [System.Object]
+            $context.SessionMetaData.Location | Should -BeOfType [PSCustomObject]
             $context.SessionMetaData.Location.Country | Should -Be 'USA'
             $context.SessionMetaData.Location.City | Should -Be 'New York'
-            $context.SessionMetaData.BrowserInfo | Should -BeOfType [System.Object]
+            $context.SessionMetaData.BrowserInfo | Should -BeOfType [PSCustomObject]
             $context.SessionMetaData.BrowserInfo.Name | Should -Be 'Chrome'
             $context.SessionMetaData.BrowserInfo.Version | Should -Be '118.0.1'
             'john_doe' | Remove-Context
