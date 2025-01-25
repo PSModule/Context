@@ -98,5 +98,6 @@ function Set-ContextVault {
 
     end {
         Write-Debug "[$stackPath] - End"
+        Import-Context
     }
 }

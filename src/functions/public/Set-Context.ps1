@@ -41,7 +41,6 @@ function Set-Context {
 
         if (-not $script:Config.Initialized) {
             Set-ContextVault
-            Import-Context
         }
     }
 

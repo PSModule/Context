@@ -52,7 +52,6 @@ function Remove-Context {
         # Example: ensure your vault/contexts are initialized once
         if (-not $script:Config.Initialized) {
             Set-ContextVault
-            Import-Context
         }
     }
 

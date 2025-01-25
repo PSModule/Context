@@ -40,7 +40,6 @@ function Get-Context {
         Write-Debug "[$stackPath] - Start"
         if (-not $script:Config.Initialized) {
             Set-ContextVault
-            Import-Context
         }
     }
 
