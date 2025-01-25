@@ -27,10 +27,13 @@ function Remove-Context {
         # The name of the context to remove from the vault.
         [Parameter(
             Mandatory,
-            ValueFromPipeline,
             ValueFromPipelineByPropertyName
         )]
-        [string] $ID
+        [string] $ID,
+
+        # Pass the context through the pipeline.
+        [Parameter(ValueFromPipeline)]
+        [string] $InputObject
     )
 
     begin {
@@ -43,6 +46,7 @@ function Remove-Context {
     }
 
     process {
+        $InputObject
         try {
             if ($PSCmdlet.ShouldProcess($ID, 'Remove secret')) {
                 $script:Contexts.GetEnumerator() | Where-Object { $_.Value.ID -eq $ID } | ForEach-Object {
