@@ -60,7 +60,10 @@ function Remove-Context {
         try {
             foreach ($item in $ID) {
                 Write-Debug "Processing ID [$item]"
-                $script:Contexts.Values | Where-Object { $_.ID -like $item } | ForEach-Object {
+                Write-Debug "Contexts: $($script:Contexts.Values)"
+                $list = $script:Contexts.GetEnumerator() | Where-Object { $_.Value.ID -like $item }
+                Write-Debug "Found contexts: $($list.Count)"
+                $list | ForEach-Object {
                     $name = $_.Key
                     Write-Debug "Removing context [$name]"
                     if ($PSCmdlet.ShouldProcess($item, 'Remove secret')) {
