@@ -49,7 +49,6 @@ function Remove-Context {
         $stackPath = Get-PSCallStackPath
         Write-Debug "[$stackPath] - Begin"
 
-        # Example: ensure your vault/contexts are initialized once
         if (-not $script:Config.Initialized) {
             Set-ContextVault
         }

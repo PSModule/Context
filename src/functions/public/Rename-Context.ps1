@@ -11,6 +11,11 @@
         Rename-Context -ID 'PSModule.GitHub' -NewID 'PSModule.GitHub2'
 
         Renames the context 'PSModule.GitHub' to 'PSModule.GitHub2'.
+
+        .EXAMPLE
+        'PSModule.GitHub' | Rename-Context -NewID 'PSModule.GitHub2'
+
+        Renames the context 'PSModule.GitHub' to 'PSModule.GitHub2'.
     #>
     [CmdletBinding(SupportsShouldProcess)]
     param (
@@ -34,6 +39,7 @@
     begin {
         $stackPath = Get-PSCallStackPath
         Write-Debug "[$stackPath] - Start"
+
         if (-not $script:Config.Initialized) {
             Set-ContextVault
         }

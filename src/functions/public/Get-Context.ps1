@@ -38,6 +38,7 @@ function Get-Context {
     begin {
         $stackPath = Get-PSCallStackPath
         Write-Debug "[$stackPath] - Start"
+
         if (-not $script:Config.Initialized) {
             Set-ContextVault
         }
