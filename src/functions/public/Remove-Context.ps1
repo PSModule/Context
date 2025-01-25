@@ -60,15 +60,12 @@ function Remove-Context {
         try {
             foreach ($item in $ID) {
                 Write-Debug "Processing ID [$item]"
-                Write-Debug ($script:Contexts.GetEnumerator() | Format-List | Out-String)
-                $list = $script:Contexts.GetEnumerator() | Where-Object { $_.Value.ID -like $item }
-                Write-Debug "Found contexts: $($list.Count)"
-                $list | ForEach-Object {
-                    $name = $_.Key
+                $script:Contexts.Values.ID | Where-Object { $_ -like $item } | ForEach-Object {
+                    $name = "$($script:Config.SecretPrefix)$_"
                     Write-Debug "Removing context [$name]"
-                    if ($PSCmdlet.ShouldProcess($item, 'Remove secret')) {
+                    if ($PSCmdlet.ShouldProcess($name, 'Remove secret')) {
                         Get-SecretInfo -Name $name -Vault $script:Config.VaultName | Remove-Secret
-                        Import-Context
+                        $script:Contexts.Remove($name)
                     }
                 }
             }
