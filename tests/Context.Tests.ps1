@@ -37,6 +37,110 @@ Describe 'Functions' {
             $result | Should -Not -BeNullOrEmpty
             $result.ID | Should -Be 'TestID2'
         }
+
+        It "Set-Context -ID 'john_doe' -Context [advanced object]" {
+            $contextData = [PSCustomObject]@{
+                Username          = 'john_doe'
+                AuthToken         = 'ghp_12345ABCDE67890FGHIJ' | ConvertTo-SecureString -AsPlainText -Force #gitleaks:allow
+                LoginTime         = Get-Date
+                IsTwoFactorAuth   = $true
+                TwoFactorMethods  = @('TOTP', 'SMS')
+                LastLoginAttempts = @(
+                    [PSCustomObject]@{
+                        Timestamp = (Get-Date).AddHours(-1)
+                        IP        = '192.168.1.101' | ConvertTo-SecureString -AsPlainText -Force
+                        Success   = $true
+                    },
+                    [PSCustomObject]@{
+                        Timestamp = (Get-Date).AddDays(-1)
+                        IP        = '203.0.113.5' | ConvertTo-SecureString -AsPlainText -Force
+                        Success   = $false
+                    }
+                )
+                UserPreferences   = @{
+                    Theme         = 'dark'
+                    DefaultBranch = 'main'
+                    Notifications = [PSCustomObject]@{
+                        Email = $true
+                        Push  = $false
+                        SMS   = $true
+                    }
+                    CodeReview    = @('PR Comments', 'Inline Suggestions')
+                }
+                Repositories      = @(
+                    [PSCustomObject]@{
+                        Name        = 'Repo1'
+                        IsPrivate   = $true
+                        CreatedDate = (Get-Date).AddMonths(-6)
+                        Stars       = 42
+                        Languages   = @('Python', 'JavaScript')
+                    },
+                    [PSCustomObject]@{
+                        Name        = 'Repo2'
+                        IsPrivate   = $false
+                        CreatedDate = (Get-Date).AddYears(-1)
+                        Stars       = 130
+                        Languages   = @('C#', 'HTML', 'CSS')
+                    }
+                )
+                AccessScopes      = @('repo', 'user', 'gist', 'admin:org')
+                ApiRateLimits     = [PSCustomObject]@{
+                    Limit     = 5000
+                    Remaining = 4985
+                    ResetTime = (Get-Date).AddMinutes(30)
+                }
+                SessionMetaData   = [PSCustomObject]@{
+                    SessionID   = 'sess_abc123'
+                    Device      = 'Windows-PC'
+                    Location    = [PSCustomObject]@{
+                        Country = 'USA'
+                        City    = 'New York'
+                    }
+                    BrowserInfo = [PSCustomObject]@{
+                        Name    = 'Chrome'
+                        Version = '118.0.1'
+                    }
+                }
+            }
+
+            { Set-Context -ID 'john_doe' -Context $contextData } | Should -Not -Throw
+            $context = Get-Context -ID 'john_doe'
+            $context | Should -Not -BeNullOrEmpty
+            $context.ID | Should -Be 'john_doe'
+            $context.Username | Should -Be 'john_doe'
+            $context.AuthToken | Should -BeOfType [System.Security.SecureString]
+            { $context.AuthToken | ConvertFrom-SecureString -AsPlainText } | Should -Be 'ghp_12345ABCDE67890FGHIJ'
+            $context.LoginTime | Should -BeOfType [System.DateTime]
+            $context.IsTwoFactorAuth | Should -Be $true
+            $context.TwoFactorMethods | Should -Be @('TOTP', 'SMS')
+            $context.LastLoginAttempts | Should -BeOfType [System.Object[]]
+            $context.LastLoginAttempts.Count | Should -Be 2
+            $context.UserPreferences | Should -BeOfType [System.Collections.Hashtable]
+            $context.UserPreferences.Theme | Should -Be 'dark'
+            $context.UserPreferences.DefaultBranch | Should -Be 'main'
+            $context.UserPreferences.Notifications | Should -BeOfType [System.Object]
+            $context.UserPreferences.Notifications.Email | Should -Be $true
+            $context.UserPreferences.Notifications.Push | Should -Be $false
+            $context.UserPreferences.Notifications.SMS | Should -Be $true
+            $context.UserPreferences.CodeReview | Should -Be @('PR Comments', 'Inline Suggestions')
+            $context.Repositories | Should -BeOfType [System.Object[]]
+            $context.Repositories.Count | Should -Be 2
+            $context.AccessScopes | Should -BeOfType [System.Object[]]
+            $context.AccessScopes.Count | Should -Be 4
+            $context.ApiRateLimits | Should -BeOfType [System.Object]
+            $context.ApiRateLimits.Limit | Should -Be 5000
+            $context.ApiRateLimits.Remaining | Should -Be 4985
+            $context.ApiRateLimits.ResetTime | Should -BeOfType [System.DateTime]
+            $context.SessionMetaData | Should -BeOfType [System.Object]
+            $context.SessionMetaData.SessionID | Should -Be 'sess_abc123'
+            $context.SessionMetaData.Device | Should -Be 'Windows-PC'
+            $context.SessionMetaData.Location | Should -BeOfType [System.Object]
+            $context.SessionMetaData.Location.Country | Should -Be 'USA'
+            $context.SessionMetaData.Location.City | Should -Be 'New York'
+            $context.SessionMetaData.BrowserInfo | Should -BeOfType [System.Object]
+            $context.SessionMetaData.BrowserInfo.Name | Should -Be 'Chrome'
+            $context.SessionMetaData.BrowserInfo.Version | Should -Be '118.0.1'
+        }
     }
 
     Context 'Function: Get-Context' {
