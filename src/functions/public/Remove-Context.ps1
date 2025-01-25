@@ -27,10 +27,9 @@ function Remove-Context {
         # The name of the context to remove from the vault.
         [Parameter(
             Mandatory,
-            ValueFromPipeline,
             ValueFromPipelineByPropertyName
         )]
-        [string[]] $ID
+        [string] $ID
     )
 
     begin {
@@ -43,20 +42,18 @@ function Remove-Context {
     }
 
     process {
-        foreach ($item in $ID) {
-            try {
-                if ($PSCmdlet.ShouldProcess($item, 'Remove secret')) {
-                    $script:Contexts.Values | Where-Object { $_.ID -eq $item } | ForEach-Object {
-                        Write-Debug "Removing context [$item]"
-                        $name = $_.Key
-                        Remove-Secret -Name $name -Vault $script:Config.VaultName -Verbose:$false
-                        $script:Contexts.Remove($name)
-                    }
+        try {
+            if ($PSCmdlet.ShouldProcess($ID, 'Remove secret')) {
+                $script:Contexts.Values | Where-Object { $_.ID -eq $ID } | ForEach-Object {
+                    Write-Debug "Removing context [$ID]"
+                    $name = $_.Key
+                    Remove-Secret -Name $name -Vault $script:Config.VaultName -Verbose:$false
+                    $script:Contexts.Remove($name)
                 }
-            } catch {
-                Write-Error $_
-                throw 'Failed to remove context'
             }
+        } catch {
+            Write-Error $_
+            throw 'Failed to remove context'
         }
     }
 
