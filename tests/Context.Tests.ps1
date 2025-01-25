@@ -13,7 +13,7 @@ BeforeAll {
     Write-Verbose "Vault: $($vault.Count)" -Verbose
     Write-Verbose ($vault | Format-Table | Out-String) -Verbose
     $vault | Unregister-SecretVault -Verbose
-    Import-Module -Name Context -Force
+    Import-Module -Name Context -Force -Verbose
 }
 
 Describe 'Functions' {

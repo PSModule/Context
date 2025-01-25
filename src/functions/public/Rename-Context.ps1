@@ -49,7 +49,7 @@
 
         if ($PSCmdlet.ShouldProcess("Renaming context '$ID' to '$NewID'")) {
             try {
-                Set-Context -ID $NewID -Context $context
+                $context | Set-Context -ID $NewID
             } catch {
                 Write-Error $_
                 throw 'Failed to set new context'

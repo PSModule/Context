@@ -26,7 +26,7 @@ function Set-Context {
         [string] $ID,
 
         # The data of the context.
-        [Parameter()]
+        [Parameter(ValueFromPipeline)]
         [object] $Context = @{},
 
         # Pass the context through the pipeline.
