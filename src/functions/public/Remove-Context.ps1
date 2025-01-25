@@ -67,7 +67,7 @@ function Remove-Context {
                     $name = $_.Key
                     Write-Debug "Removing context [$name]"
                     if ($PSCmdlet.ShouldProcess($item, 'Remove secret')) {
-                        Remove-Secret -Name $name -Vault $script:Config.VaultName
+                        Get-SecretInfo -Name $name -Vault $script:Config.VaultName | Remove-Secret
                         $script:Contexts.Remove($name)
                     }
                 }
