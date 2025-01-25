@@ -7,6 +7,7 @@ function Set-Context {
 
         .DESCRIPTION
         If the context does not exist, it will be created. If it already exists, it will be updated.
+        The context is cached in memory for faster access.
 
         .EXAMPLE
         Set-Context -ID 'PSModule.GitHub' -Context @{ Name = 'MySecret' }
@@ -22,7 +23,7 @@ function Set-Context {
     [CmdletBinding(SupportsShouldProcess)]
     param(
         # The ID of the context.
-        [Parameter(Mandatory)]
+        [Parameter(ValueFromPipelineByPropertyName)]
         [string] $ID,
 
         # The data of the context.
@@ -44,6 +45,12 @@ function Set-Context {
     }
 
     process {
+        if (-not $ID) {
+            $ID = $Context.ID
+        }
+        if (-not $ID) {
+            throw 'ID is required in either the ID parameter or the Context object'
+        }
         try {
             $secret = ConvertTo-ContextJson -Context $Context -ID $ID
         } catch {

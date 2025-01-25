@@ -1,5 +1,4 @@
-﻿#Requires -Modules @{ ModuleName = 'DynamicParams'; RequiredVersion = '1.1.8' }
-#Requires -Modules @{ ModuleName = 'Microsoft.PowerShell.SecretManagement'; RequiredVersion = '1.1.2' }
+﻿#Requires -Modules @{ ModuleName = 'Microsoft.PowerShell.SecretManagement'; RequiredVersion = '1.1.2' }
 
 function Remove-Context {
     <#
@@ -20,6 +19,11 @@ function Remove-Context {
         Remove-Context -ID 'MySecret'
 
         Removes the context called 'MySecret' from the vault.
+
+        .EXAMPLE
+        Remove-Context -ID 'MySecret'
+
+        Removes the context called 'MySecret' from the vault.
     #>
     [OutputType([void])]
     [CmdletBinding(SupportsShouldProcess)]
@@ -29,6 +33,7 @@ function Remove-Context {
             Mandatory,
             ValueFromPipelineByPropertyName
         )]
+        [SupportsWildcards()]
         [string] $ID
     )
 
@@ -44,7 +49,7 @@ function Remove-Context {
     process {
         try {
             if ($PSCmdlet.ShouldProcess($ID, 'Remove secret')) {
-                $script:Contexts.Values | Where-Object { $_.ID -eq $ID } | ForEach-Object {
+                $script:Contexts.Values | Where-Object { $_.ID -like $ID } | ForEach-Object {
                     Write-Debug "Removing context [$ID]"
                     $name = $_.Key
                     Remove-Secret -Name $name -Vault $script:Config.VaultName -Verbose:$false

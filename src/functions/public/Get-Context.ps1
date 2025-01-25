@@ -1,10 +1,10 @@
-filter Get-Context {
+function Get-Context {
     <#
         .SYNOPSIS
-        Geta a context.
+        Gets a context.
 
         .DESCRIPTION
-        Retrieves a context from the preloaded contexts that are in memory.
+        Gets a context from the loaded contexts that are in memory.
         If no name is specified, all contexts will be returned.
 
         .EXAMPLE
@@ -16,6 +16,11 @@ filter Get-Context {
         Get-Context -ID 'MySecret'
 
         Get the context called 'MySecret' from the context vault (in memory).
+
+        .EXAMPLE
+        Get-Context -ID 'My*'
+
+        Get all contexts that start with 'My' from the context vault (in memory).
     #>
     [OutputType([object])]
     [CmdletBinding(DefaultParameterSetName = '__AllParameterSets')]
