@@ -29,11 +29,7 @@ function Remove-Context {
             Mandatory,
             ValueFromPipelineByPropertyName
         )]
-        [string] $ID,
-
-        # Pass the context through the pipeline.
-        [Parameter(ValueFromPipeline)]
-        [string] $InputObject
+        [string[]] $ID
     )
 
     begin {
@@ -46,18 +42,20 @@ function Remove-Context {
     }
 
     process {
-        Write-Debug $InputObject
-        try {
-            if ($PSCmdlet.ShouldProcess($ID, 'Remove secret')) {
-                $script:Contexts.GetEnumerator() | Where-Object { $_.Value.ID -eq $ID } | ForEach-Object {
-                    Remove-Secret -Name $_.Key -Vault $script:Config.VaultName -Verbose:$false
-                    $script:Contexts.Remove($_.Key)
-                    Write-Debug "Removed context [$ID]"
+        foreach ($item in $ID) {
+            try {
+                if ($PSCmdlet.ShouldProcess($item, 'Remove secret')) {
+                    $script:Contexts.Values | Where-Object { $_.ID -eq $item } | ForEach-Object {
+                        Write-Debug "Removing context [$item]"
+                        $name = $_.Key
+                        Remove-Secret -Name $name -Vault $script:Config.VaultName -Verbose:$false
+                        $script:Contexts.Remove($name)
+                    }
                 }
+            } catch {
+                Write-Error $_
+                throw 'Failed to remove context'
             }
-        } catch {
-            Write-Error $_
-            throw 'Failed to remove context'
         }
     }
 
