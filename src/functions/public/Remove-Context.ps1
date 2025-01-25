@@ -32,15 +32,18 @@ filter Remove-Context {
     begin {
         $stackPath = Get-PSCallStackPath
         Write-Debug "[$stackPath] - Start"
-        Set-ContextVault
+        if (-not $script:Config.Initialized) {
+            Set-ContextVault
+            Import-Context
+        }
     }
 
     process {
         try {
-
             if ($PSCmdlet.ShouldProcess($ID, 'Remove secret')) {
-                Get-ContextInfo | Where-Object { $_.ID -eq $ID } | ForEach-Object {
-                    Remove-Secret -Name $_.SecretName -Vault $script:Config.VaultName -Verbose:$false
+                $script:Contexts.GetEnumerator() | Where-Object { $_.Value.ID -eq $ID } | ForEach-Object {
+                    Remove-Secret -Name $_.Key -Vault $script:Config.VaultName -Verbose:$false
+                    $script:Contexts.Remove($_.Key)
                     Write-Debug "Removed context [$ID]"
                 }
             }

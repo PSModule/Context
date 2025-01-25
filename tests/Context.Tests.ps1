@@ -19,13 +19,6 @@ Describe 'Functions' {
     Context 'Function: Set-Context' {
         It "Set-Context -ID 'TestID1'" {
             { Set-Context -ID 'TestID1' } | Should -Not -Throw
-            $contextInfo = Get-ContextInfo
-            Write-Verbose ($contextInfo | Out-String) -Verbose
-            $contextInfo.Count | Should -Be 1
-            $contextInfo[0].ID | Should -Be 'TestID1'
-            $contextInfo[0].SecretName | Should -Be 'Context:TestID1'
-
-
             $result = Get-Context -ID 'TestID1'
             Write-Verbose ($result | Out-String) -Verbose
             $result | Should -Not -BeNullOrEmpty
@@ -33,10 +26,6 @@ Describe 'Functions' {
         }
         It "Set-Context -ID 'TestID2' -Context @{}" {
             { Set-Context -ID 'TestID2' -Context @{} } | Should -Not -Throw
-            $contextInfo = Get-ContextInfo
-            Write-Verbose ($contextInfo | Out-String) -Verbose
-            $contextInfo.Count | Should -Be 2
-
             $result = Get-Context -ID 'TestID2'
             $result | Should -Not -BeNullOrEmpty
             $result.ID | Should -Be 'TestID2'

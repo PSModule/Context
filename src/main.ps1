@@ -1,0 +1,2 @@
+﻿Set-ContextVault
+Import-Context

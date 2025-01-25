@@ -37,9 +37,10 @@ function Set-Context {
     begin {
         $stackPath = Get-PSCallStackPath
         Write-Debug "[$stackPath] - Start"
-        Set-ContextVault
-        $vaultName = $script:Config.VaultName
-        $secretPrefix = $script:Config.SecretPrefix
+        if (-not $script:Config.Initialized) {
+            Set-ContextVault
+            Import-Context
+        }
     }
 
     process {
@@ -50,17 +51,19 @@ function Set-Context {
             throw 'Failed to convert context to JSON'
         }
 
+        $Name = "$($script:Config.SecretPrefix)$ID"
         $param = @{
-            Name    = "$secretPrefix$ID"
+            Name    = $Name
             Secret  = $secret
-            Vault   = $vaultName
+            Vault   = $script:Config.VaultName
             Verbose = $false
         }
         Write-Debug ($param | ConvertTo-Json -Depth 5)
 
         try {
-            if ($PSCmdlet.ShouldProcess($ID, 'Set Secret')) {
+            if ($PSCmdlet.ShouldProcess($Name, 'Set Secret')) {
                 Set-Secret @param
+                $script:Contexts[$Name] = $Context
             }
         } catch {
             Write-Error $_

@@ -30,7 +30,10 @@
     begin {
         $stackPath = Get-PSCallStackPath
         Write-Debug "[$stackPath] - Start"
-        Set-ContextVault
+        if (-not $script:Config.Initialized) {
+            Set-ContextVault
+            Import-Context
+        }
     }
 
     process {
