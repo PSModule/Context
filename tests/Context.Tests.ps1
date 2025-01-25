@@ -207,16 +207,12 @@ Describe 'Functions' {
     Context 'Function: Rename-Context' {
         BeforeEach {
             # Ensure no contexts exist before starting tests
-            Get-Context | ForEach-Object {
-                Remove-Context -ID $_.ID
-            }
+            Get-Context | Remove-Context
         }
 
         AfterEach {
             # Cleanup any contexts created during tests
-            Get-Context | ForEach-Object {
-                Remove-Context -ID $_.ID
-            }
+            Get-Context | Remove-Context
         }
 
         It 'Renames the context successfully' {

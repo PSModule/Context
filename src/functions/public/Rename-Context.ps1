@@ -15,7 +15,11 @@
     [CmdletBinding(SupportsShouldProcess)]
     param (
         # The ID of the context to rename.
-        [Parameter(Mandatory)]
+        [Parameter(
+            Mandatory,
+            ValueFromPipeline,
+            ValueFromPipelineByPropertyName
+        )]
         [string] $ID,
 
         # The new ID of the context.
