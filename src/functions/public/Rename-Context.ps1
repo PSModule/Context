@@ -16,6 +16,9 @@
         'PSModule.GitHub' | Rename-Context -NewID 'PSModule.GitHub2'
 
         Renames the context 'PSModule.GitHub' to 'PSModule.GitHub2'.
+
+        .LINK
+        https://psmodule.io/Context/Functions/Rename-Context/
     #>
     [CmdletBinding(SupportsShouldProcess)]
     param (

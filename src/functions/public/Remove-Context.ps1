@@ -33,6 +33,9 @@ function Remove-Context {
         $ctxList | Remove-Context
 
         Accepts pipeline input: multiple objects each having an ID property
+
+        .LINK
+        https://psmodule.io/Context/Functions/Remove-Context/
     #>
     [CmdletBinding(SupportsShouldProcess)]
     param(

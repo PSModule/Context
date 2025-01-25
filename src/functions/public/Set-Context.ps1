@@ -18,6 +18,9 @@ function Set-Context {
         Set-Context -ID 'PSModule.GitHub' -Context @{ Name = 'MySecret'; AccessToken = '123123123' }
 
         Creates a context called 'MySecret' in the vault with the settings.
+
+        .LINK
+        https://psmodule.io/Context/Functions/Set-Context/
     #>
     [OutputType([object])]
     [CmdletBinding(SupportsShouldProcess)]

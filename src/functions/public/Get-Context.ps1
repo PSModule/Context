@@ -21,6 +21,9 @@ function Get-Context {
         Get-Context -ID 'My*'
 
         Get all contexts that start with 'My' from the context vault (in memory).
+
+        .LINK
+        https://psmodule.io/Context/Functions/Get-Context/
     #>
     [OutputType([object])]
     [CmdletBinding()]
