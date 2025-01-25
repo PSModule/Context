@@ -140,18 +140,17 @@ Describe 'Functions' {
             $context.SessionMetaData.BrowserInfo | Should -BeOfType [PSCustomObject]
             $context.SessionMetaData.BrowserInfo.Name | Should -Be 'Chrome'
             $context.SessionMetaData.BrowserInfo.Version | Should -Be '118.0.1'
-            'john_doe' | Remove-Context
         }
     }
 
     Context 'Function: Get-Context' {
         It 'Get-Context - Should return all contexts' {
             Write-Verbose (Get-Context | Out-String) -Verbose
-            (Get-Context).Count | Should -Be 2
+            (Get-Context).Count | Should -Be 3
         }
         It "Get-Context -ID '*' - Should return all contexts" {
             Write-Verbose (Get-Context -ID '*' | Out-String) -Verbose
-            (Get-Context -ID '*').Count | Should -Be 2
+            (Get-Context -ID '*').Count | Should -Be 3
         }
         It "Get-Context -ID 'TestID*' - Should return all contexts" {
             Write-Verbose (Get-Context -ID 'TestID*' | Out-String) -Verbose
@@ -185,6 +184,15 @@ Describe 'Functions' {
                 }
             } | Should -Not -Throw
             (Get-Context -ID 'Temp*').Count | Should -Be 0
+        }
+
+        It "Remove-Context -ID 'NonExistentContext' - Should not throw" {
+            { Remove-Context -ID 'NonExistentContext' } | Should -Not -Throw
+        }
+
+        It "'john_doe' | Remove-Context - Should remove the context" {
+            { 'john_doe' | Remove-Context } | Should -Not -Throw
+            Get-Context -ID 'john_doe' | Should -BeNullOrEmpty
         }
     }
 
