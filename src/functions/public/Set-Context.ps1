@@ -34,6 +34,12 @@ function Set-Context {
 
         Creates a context called 'MySecret' in the vault with additional settings.
 
+        .EXAMPLE
+        $context = @{ ID = 'MySecret'; Name = 'SomeSecretIHave'; AccessToken = '123123123' }
+        $context | Set-Context
+
+        Sets a context using a hashtable object.
+
         .OUTPUTS
         [PSCustomObject]
 
@@ -48,7 +54,7 @@ function Set-Context {
     [CmdletBinding(SupportsShouldProcess)]
     param(
         # The ID of the context.
-        [Parameter(ValueFromPipelineByPropertyName)]
+        [Parameter()]
         [string] $ID,
 
         # The data of the context.
@@ -70,6 +76,16 @@ function Set-Context {
     }
 
     process {
+        if ($context -is [System.Collections.IDictionary]) {
+            $Context = [PSCustomObject]$Context
+        }
+
+        if (-not $ID) {
+            $ID = $Context.ID
+        }
+        if (-not $ID) {
+            throw "An ID is required, either as a parameter or as a property of the context object."
+        }
         $existingContextInfo = $script:Contexts[$ID]
         if (-not $existingContextInfo) {
             Write-Verbose "Context [$ID] not found in vault"
