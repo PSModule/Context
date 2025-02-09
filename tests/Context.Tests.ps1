@@ -284,6 +284,7 @@ Describe 'Functions' {
             $result | Should -Not -BeNullOrEmpty
             $result.ID | Should -Contain 'PipeInfo1'
             $result.ID | Should -Contain 'PipeInfo2'
+            Write-Verbose ($result.PSObject.Properties.Name | Format-List | Out-String) -Verbose
             $result.PSObject.Properties.Name | Should -BeIn @('ID', 'Path')
         }
 
@@ -295,6 +296,7 @@ Describe 'Functions' {
             $result | Should -
             $result | Should -Not -BeNullOrEmpty
             $result.ID | Should -Be 'PipeInfo3'
+            Write-Verbose ($result.PSObject.Properties.Name | Format-List | Out-String) -Verbose
             $result.PSObject.Properties.Name | Should -BeIn @('ID', 'Path')
         }
     }
