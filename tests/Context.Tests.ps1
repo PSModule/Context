@@ -284,8 +284,7 @@ Describe 'Functions' {
             $result | Should -Not -BeNullOrEmpty
             $result.ID | Should -Contain 'PipeInfo1'
             $result.ID | Should -Contain 'PipeInfo2'
-            Write-Verbose ($result.PSObject.Properties.Name | Format-List | Out-String) -Verbose
-            $result.PSObject.Properties.Name | Should -BeIn @('ID', 'Path')
+            $result | ForEach-Object { $_.PSObject.Properties.Name | Should -BeIn @('ID', 'Path') }
         }
 
         It 'Get-ContextInfo supports pipeline input by property name' {
@@ -293,11 +292,9 @@ Describe 'Functions' {
             Set-Context -ID 'PipeInfo3' -Context @{ Dummy = 3 }
             $obj = [PSCustomObject]@{ ID = 'PipeInfo3' }
             $result = $obj | Get-ContextInfo
-            $result | Should -
             $result | Should -Not -BeNullOrEmpty
             $result.ID | Should -Be 'PipeInfo3'
-            Write-Verbose ($result.PSObject.Properties.Name | Format-List | Out-String) -Verbose
-            $result.PSObject.Properties.Name | Should -BeIn @('ID', 'Path')
+            $result | ForEach-Object { $_.PSObject.Properties.Name | Should -BeIn @('ID', 'Path') }
         }
     }
 }
