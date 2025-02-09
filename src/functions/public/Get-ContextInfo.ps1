@@ -92,7 +92,7 @@
     }
 
     process {
-        Write-Debug "Retrieving context info - ID: [$ID]"
+        Write-Verbose "Retrieving context info - ID: [$ID]"
         foreach ($item in $ID) {
             $script:Contexts.Values | Where-Object { $_.ID -like $item } | Select-Object -ExcludeProperty Context
         }

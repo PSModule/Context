@@ -16,7 +16,7 @@
         Repositories      : {@{Languages=System.Object[]; IsPrivate=False; Stars=130;
                             CreatedDate=2/9/2024 10:45:11 AM; Name=Repo2}}
         AccessScopes      : {repo, user, gist, admin:org}
-        AuthToken         : ghp_12345ABCDE67890FGHIJ
+        AuthToken         : MyFirstSuperSecretToken
         TwoFactorMethods  : {TOTP, SMS}
         IsTwoFactorAuth   : True
         ApiRateLimits     : @{ResetTime=2/9/2025 11:15:11 AM; Remaining=4985; Limit=5000}
@@ -30,7 +30,7 @@
         Repositories      : {@{Languages=System.Object[]; IsPrivate=False; Stars=130;
                             CreatedDate=2/9/2024 10:45:11 AM; Name=Repo2}}
         AccessScopes      : {repo, user, gist, admin:org}
-        AuthToken         : ghp_12345ABCDE67890FGHIJ
+        AuthToken         : MySuperSecretToken
         TwoFactorMethods  : {TOTP, SMS}
         IsTwoFactorAuth   : True
         ApiRateLimits     : @{ResetTime=2/9/2025 11:15:11 AM; Remaining=4985; Limit=5000}
@@ -103,9 +103,9 @@
     }
 
     process {
-        Write-Debug "Retrieving contexts - ID: [$($ID -join ', ')]"
+        Write-Verbose "Retrieving contexts - ID: [$($ID -join ', ')]"
         foreach ($item in $ID) {
-            Write-Debug "Retrieving contexts - ID: [$item]"
+            Write-Verbose "Retrieving contexts - ID: [$item]"
             $script:Contexts.Values | Where-Object { $_.ID -like $item } | Select-Object -ExpandProperty Context
         }
     }
