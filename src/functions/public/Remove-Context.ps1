@@ -1,6 +1,4 @@
-﻿#Requires -Modules @{ ModuleName = 'Microsoft.PowerShell.SecretManagement'; RequiredVersion = '1.1.2' }
-
-function Remove-Context {
+﻿function Remove-Context {
     <#
         .SYNOPSIS
         Removes a context from the context vault.
@@ -62,11 +60,10 @@ function Remove-Context {
             foreach ($item in $ID) {
                 Write-Debug "Processing ID [$item]"
                 $script:Contexts.Values.ID | Where-Object { $_ -like $item } | ForEach-Object {
-                    $name = "$($script:Config.SecretPrefix)$_"
-                    Write-Debug "Removing context [$name]"
-                    if ($PSCmdlet.ShouldProcess($name, 'Remove secret')) {
-                        Get-SecretInfo -Name $name -Vault $script:Config.VaultName | Remove-Secret
-                        $null = $script:Contexts.Remove($name)
+                    Write-Debug "Removing context [$_]"
+                    if ($PSCmdlet.ShouldProcess($_, 'Remove secret')) {
+                        $script:Contexts[$_].FileName | Remove-Item -Force
+                        $null = $script:Contexts.Remove($_)
                     }
                 }
             }
