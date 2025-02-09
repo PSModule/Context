@@ -7,17 +7,36 @@ function Set-Context {
 
         .DESCRIPTION
         If the context does not exist, it will be created. If it already exists, it will be updated.
-        The context is cached in memory for faster access.
+        The context is cached in memory for faster access. This function ensures that the context
+        is securely stored using encryption mechanisms.
 
         .EXAMPLE
         Set-Context -ID 'PSModule.GitHub' -Context @{ Name = 'MySecret' }
 
-        Create a context called 'MySecret' in the vault.
+        Output:
+        ```powershell
+        ID      : PSModule.GitHub
+        Path    : C:\Vault\Guid.json
+        Context : @{ Name = 'MySecret' }
+        ```
+
+        Creates a context called 'MySecret' in the vault.
 
         .EXAMPLE
         Set-Context -ID 'PSModule.GitHub' -Context @{ Name = 'MySecret'; AccessToken = '123123123' }
 
-        Creates a context called 'MySecret' in the vault with the settings.
+        Output:
+        ```powershell
+        ID      : PSModule.GitHub
+        Path    : C:\Vault\Guid.json
+        Context : @{ Name = 'MySecret'; AccessToken = '123123123' }
+        ```
+
+        Creates a context called 'MySecret' in the vault with additional settings.
+
+        .OUTPUTS
+        [PSCustomObject]. Returns an object representing the stored or updated context.
+        The object includes the ID, path, and securely stored context information.
 
         .LINK
         https://psmodule.io/Context/Functions/Set-Context/
@@ -49,7 +68,6 @@ function Set-Context {
 
     process {
         try {
-            #Do i already have a context for this ID?
             $existingContextInfo = $script:Contexts[$ID]
             if (-not $existingContextInfo) {
                 Write-Verbose "Context [$ID] not found in vault"

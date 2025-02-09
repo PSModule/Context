@@ -6,12 +6,30 @@ filter Import-Context {
         Imports the context vault into memory.
 
         .DESCRIPTION
-        Imports the context vault into memory.
+        Imports all context files from the context vault directory into memory.
+        Each context is decrypted using the configured private key and stored
+        in the script-wide context collection for further use.
 
         .EXAMPLE
-        Import-Context
+        Import-Context -Verbose
+
+        Output:
+        ```powershell
+        VERBOSE: Importing contexts from vault: [C:\Vault]
+        VERBOSE: Found [3] contexts
+        VERBOSE: Importing context: [123456]
+        ```
 
         Imports all contexts from the context vault into memory.
+
+        .OUTPUTS
+        [pscustomobject].
+
+        .NOTES
+        Represents the imported context object containing ID, Path, and Context properties.
+
+        .LINK
+        https://psmodule.io/Sodium/Functions/Import-Context/
     #>
     [OutputType([object])]
     [CmdletBinding()]

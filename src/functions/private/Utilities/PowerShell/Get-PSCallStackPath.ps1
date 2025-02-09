@@ -1,45 +1,67 @@
 ﻿function Get-PSCallStackPath {
     <#
         .SYNOPSIS
-        Create a string representation of the current call stack.
+        Creates a string representation of the current call stack.
 
         .DESCRIPTION
-        This function creates a string representation of the current call stack.
-        You can use the SkipFirst and SkipLatest parameters to skip the first and last.
-        By default it will skip the first (what called the initial function, typically <ScriptBlock>),
-        and the last (the current function, Get-PSCallStackPath).
+        This function generates a string representation of the current call stack.
+        It allows skipping the first and last elements of the call stack using the `SkipFirst`
+        and `SkipLatest` parameters. By default, it skips the first function (typically `<ScriptBlock>`)
+        and the last function (`Get-PSCallStackPath`) to present a cleaner view of the actual call stack.
 
         .EXAMPLE
         Get-PSCallStackPath
-        First-Function\Second-Function\Third-Function
 
-        Shows the call stack of the last function called, Third-Function, with the first (<ScriptBlock>) and last (Get-PSCallStackPath) functions
-        removed.
+        Output:
+        ```powershell
+        First-Function\Second-Function\Third-Function
+        ```
+
+        Returns the call stack with the first (`<ScriptBlock>`) and last (`Get-PSCallStackPath`)
+        functions removed.
 
         .EXAMPLE
         Get-PSCallStackPath -SkipFirst 0
-        <ScriptBlock>\First-Function\Second-Function\Third-Function
 
-        Shows the call stack of the last function called, Third-Function, with the first function included (typically <ScriptBlock>).
+        Output:
+        ```powershell
+        <ScriptBlock>\First-Function\Second-Function\Third-Function
+        ```
+
+        Includes the first function (typically `<ScriptBlock>`) in the call stack output.
 
         .EXAMPLE
         Get-PSCallStackPath -SkipLatest 0
-        First-Function\Second-Function\Third-Function\Get-PSCallStackPath
 
-        Shows the call stack of the last function called, Third-Function, with the last function included (Get-PSCallStackPath).
+        Output:
+        ```powershell
+        First-Function\Second-Function\Third-Function\Get-PSCallStackPath
+        ```
+
+        Includes the last function (`Get-PSCallStackPath`) in the call stack output.
+
+        .OUTPUTS
+        System.String.
+
+        .NOTES
+        A string representing the call stack path, with function names separated by backslashes.
+
+        .LINK
+        https://psmodule.io/PSCallStack/Functions/Get-PSCallStackPath/
     #>
     [CmdletBinding()]
     param(
-        # Number of the functions to skip from the last function called.
-        # Last function is this function, Get-PSCallStackPath.
+        # The number of functions to skip from the last function called.
+        # The last function in the stack is this function (`Get-PSCallStackPath`).
         [Parameter()]
         [int] $SkipLatest = 1,
 
-        # Number of the functions to skip from the first function called.
-        # First function is typically <ScriptBlock>.
+        # The number of functions to skip from the first function called.
+        # The first function is typically `<ScriptBlock>`.
         [Parameter()]
         [int] $SkipFirst = 1
     )
+
     $skipFirst++
     $cmds = (Get-PSCallStack).Command
     $functionPath = $cmds[($cmds.Count - $skipFirst)..$SkipLatest] -join '\'

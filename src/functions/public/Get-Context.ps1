@@ -1,26 +1,49 @@
 function Get-Context {
     <#
         .SYNOPSIS
-        Gets a context.
+        Retrieves a context from the in-memory context vault.
 
         .DESCRIPTION
-        Gets a context from the loaded contexts that are in memory.
-        If no name is specified, all contexts will be returned.
+        Retrieves a context from the loaded contexts stored in memory.
+        If no ID is specified, all available contexts will be returned.
+        Wildcards are supported to match multiple contexts.
 
         .EXAMPLE
         Get-Context
 
-        Get all contexts from the context vault (in memory).
+        Output:
+        ```powershell
+        ID        : Default
+        Context   : {Property1=Value1, Property2=Value2}
+        ```
+
+        Retrieves all contexts from the context vault (in memory).
 
         .EXAMPLE
         Get-Context -ID 'MySecret'
 
-        Get the context called 'MySecret' from the context vault (in memory).
+        Output:
+        ```powershell
+        ID        : MySecret
+        Context   : {Key=EncryptedValue}
+        ```
+
+        Retrieves the context called 'MySecret' from the context vault (in memory).
 
         .EXAMPLE
         Get-Context -ID 'My*'
 
-        Get all contexts that start with 'My' from the context vault (in memory).
+        Output:
+        ```powershell
+        ID        : MyConfig
+        Context   : {ConfigKey=ConfigValue}
+        ```
+
+        Retrieves all contexts that start with 'My' from the context vault (in memory).
+
+        .OUTPUTS
+        System.Object. Returns a list of contexts matching the specified ID or all contexts if no ID is specified.
+        Each context object contains its ID and corresponding stored properties.
 
         .LINK
         https://psmodule.io/Context/Functions/Get-Context/
@@ -28,7 +51,7 @@ function Get-Context {
     [OutputType([object])]
     [CmdletBinding()]
     param(
-        # The name of the context to retrieve from the vault.
+        # The name of the context to retrieve from the vault. Supports wildcards.
         [Parameter()]
         [AllowEmptyString()]
         [SupportsWildcards()]
@@ -48,8 +71,6 @@ function Get-Context {
         try {
             Write-Debug "Retrieving contexts - ID: [$ID]"
             $script:Contexts.Values | Where-Object { $_.ID -like $ID } | Select-Object -ExpandProperty Context
-
-            # If not supported, do a light load of the context (no decryption). ContextInfo / Context
 
         } catch {
             Write-Error $_
