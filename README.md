@@ -1,219 +1,61 @@
 # Context
 
-Modules usually have two types of data that would be great to store and manage in a good way: module and user settings and secrets. With this module,
-we aim to store this data using a the concept of `Contexts` that are stored locally on the machine where the module is running. It lets module
-developers separate user and module data from the module code, so that modules can be created in a way where users can resume from where they left off
-without having to reconfigure the module or log in to services that support refreshing sessions with data you can store, i.e., refresh tokens.
+Modules typically handle two types of data that benefit from persistent secure storage and management: module settings and user settings and secrets.
+This module introduces the concept of `Contexts`, which store data locally on the machine where the module runs. It allows module developers to
+separate user and module data from the module code, enabling users to resume their work without needing to reconfigure the module or log in again,
+provided the service supports session refresh mechanisms (e.g., refresh tokens).
 
-The module uses NaCl based encryption delivered by the `libsodium` library to encrypt and decrypt the data stored in a `Context`. The module that
-serves this functionality is called [`Sodium`](https://github.com/someuser/Sodium) and is a dependency of this module. The
+The module uses NaCl-based encryption, provided by the `libsodium` library, to encrypt and decrypt `Context` data. The module that delivers this
+functionality is called [`Sodium`](https://github.com/someuser/Sodium) and is a dependency of this module. The
 [`Sodium`](https://github.com/someuser/Sodium) module is automatically installed when you install this module.
 
 ## What is a `Context`?
 
-A `Context` is a way to persist user and module state securely on disk while ensuring data remains encrypted at rest. It stores structured data that
-can be represented in JSON format, including regular values and secure secrets. It can hold multiple secrets (such as passwords or API tokens)
-alongside general data like configuration settings, session metadata, or user preferences. Secure secrets are specially handled to maintain their
-security when stored and retrieved.
+A `Context` is a way to securely persist user and module state on disk while ensuring data remains encrypted at rest. It stores structured data that
+can be represented in JSON format, including regular values, arrays, objects and `SecureString`. It can hold multiple secrets (such as passwords or
+API tokens) alongside general data like configuration settings, session metadata, or user preferences. `SecureStrings` are specially handled to
+maintain their security when stored and retrieved.
 
-When saving a `Context`, the data is converted to a plain-text JSON structure, then encrypted and written to disk. Secure strings are marked with a
-special prefix before encryption, ensuring they can be safely restored as secure strings when the `Context` is loaded back into memory.
+When saving a `Context`, data is first structured as plain-text JSON, then encrypted and stored on disk. `SecureStrings` are marked with a special
+prefix before encryption, ensuring they can be safely restored as secure strings when the `Context` is loaded back into memory.
 
 When imported, the encrypted data is decrypted, converted back into its original structured format, and held in memory, ensuring both usability and
 security.
 
 <details>
-<summary>1. Storing data (object or dictionary) in persistent storage using Set-Context</summary>
+<summary> 1. Storing data (object or dictionary) in persistent storage using `Set-Context` </summary>
 
-Typical the first input to a context (altho it can also be a hashtable or any other object type that converts with JSON)
+Typically, the first input to a `Context` is an object (though it can also be a hashtable or any other type that converts to JSON).
 
 ```pwsh
 Set-Context -ID 'john_doe' -Context ([PSCustomObject]@{
     Username          = 'john_doe'
-    AuthToken         = 'ghp_12345ABCDE67890FGHIJ' | ConvertTo-SecureString -AsPlainText -Force #gitleaks:allow
+    AuthToken         = 'ghp_12345ABCDE67890FGHIJ' | ConvertTo-SecureString -AsPlainText -Force # gitleaks:allow
     LoginTime         = Get-Date
     IsTwoFactorAuth   = $true
     TwoFactorMethods  = @('TOTP', 'SMS')
-    LastLoginAttempts = @(
-        [PSCustomObject]@{
-            Timestamp = (Get-Date).AddHours(-1)
-            IP        = '192.168.1.101' | ConvertTo-SecureString -AsPlainText -Force
-            Success   = $true
-        },
-        [PSCustomObject]@{
-            Timestamp = (Get-Date).AddDays(-1)
-            IP        = '203.0.113.5' | ConvertTo-SecureString -AsPlainText -Force
-            Success   = $false
-        }
-    )
-    UserPreferences   = @{
-        Theme         = 'dark'
-        DefaultBranch = 'main'
-        Notifications = [PSCustomObject]@{
-            Email = $true
-            Push  = $false
-            SMS   = $true
-        }
-        CodeReview    = @('PR Comments', 'Inline Suggestions')
-    }
-    Repositories      = @(
-        [PSCustomObject]@{
-            Name        = 'Repo1'
-            IsPrivate   = $true
-            CreatedDate = (Get-Date).AddMonths(-6)
-            Stars       = 42
-            Languages   = @('Python', 'JavaScript')
-        },
-        [PSCustomObject]@{
-            Name        = 'Repo2'
-            IsPrivate   = $false
-            CreatedDate = (Get-Date).AddYears(-1)
-            Stars       = 130
-            Languages   = @('C#', 'HTML', 'CSS')
-        }
-    )
-    AccessScopes      = @('repo', 'user', 'gist', 'admin:org')
-    ApiRateLimits     = [PSCustomObject]@{
-        Limit     = 5000
-        Remaining = 4985
-        ResetTime = (Get-Date).AddMinutes(30)
-    }
-    SessionMetaData   = [PSCustomObject]@{
-        SessionID   = 'sess_abc123'
-        Device      = 'Windows-PC'
-        Location    = [PSCustomObject]@{
-            Country = 'USA'
-            City    = 'New York'
-        }
-        BrowserInfo = [PSCustomObject]@{
-            Name    = 'Chrome'
-            Version = '118.0.1'
-        }
-    }
 })
 ```
 </details>
 
 <details>
-<summary>2. How the data utimatly gets stored - As a processed JSON</summary>
+<summary> 2. How the data is ultimately stored – as processed JSON </summary>
 
-This is how the objecet above is stored, except that this is an uncomressed version for readability.
-Here you see that the `ID` property gets added.
+This is how the object above is stored, shown here in an uncompressed format for readability. Notice that the `ID` property gets added.
 
 ```json
 {
     "ID": "john_doe",
     "Username": "john_doe",
     "AuthToken": "[SECURESTRING]ghp_12345ABCDE67890FGHIJ",
-    "LoginTime": "2024-11-21T21:16:56.2518249+01:00",
-    "IsTwoFactorAuth": true,
-    "TwoFactorMethods": [
-        "TOTP",
-        "SMS"
-    ],
-    "LastLoginAttempts": [
-        {
-            "Timestamp": "2024-11-21T20:16:56.2518510+01:00",
-            "IP": "[SECURESTRING]192.168.1.101",
-            "Success": true
-        },
-        {
-            "Timestamp": "2024-11-20T21:16:56.2529436+01:00",
-            "IP": "[SECURESTRING]203.0.113.5",
-            "Success": false
-        }
-    ],
-    "UserPreferences": {
-        "Theme": "dark",
-        "DefaultBranch": "main",
-        "Notifications": {
-            "Email": true,
-            "Push": false,
-            "SMS": true
-        },
-        "CodeReview": [
-            "PR Comments",
-            "Inline Suggestions"
-        ]
-    },
-    "Repositories": [
-        {
-            "Name": "Repo1",
-            "IsPrivate": true,
-            "CreatedDate": "2024-05-21T21:16:56.2540703+02:00",
-            "Stars": 42,
-            "Languages": [
-                "Python",
-                "JavaScript"
-            ]
-        },
-        {
-            "Name": "Repo2",
-            "IsPrivate": false,
-            "CreatedDate": "2023-11-21T21:16:56.2545789+01:00",
-            "Stars": 130,
-            "Languages": [
-                "C#",
-                "HTML",
-                "CSS"
-            ]
-        }
-    ],
-    "AccessScopes": [
-        "repo",
-        "user",
-        "gist",
-        "admin:org"
-    ],
-    "ApiRateLimits": {
-        "Limit": 5000,
-        "Remaining": 4985,
-        "ResetTime": "2024-11-21T21:46:56.2550348+01:00"
-    },
-    "SessionMetaData": {
-        "SessionID": "sess_abc123",
-        "Device": "Windows-PC",
-        "Location": {
-            "Country": "USA",
-            "City": "New York"
-        },
-        "BrowserInfo": {
-            "Name": "Chrome",
-            "Version": "118.0.1"
-        }
-    }
+    "LoginTime": "2024-11-21T21:16:56.2518249+01:00"
 }
-```
-</details>
-
-<details>
-<summary>3. Imported data (as a PSCustomObject) and shown with Get-Context</summary>
-
-This is how the object is returned from the `Get-Context` function.
-Notice that the `ID` property has been added to the object.
-
-```pwsh
-Get-Context -ID 'john_doe'
-
-ID                : john_doe
-UserPreferences   : @{DefaultBranch=main; Notifications=; Theme=dark; CodeReview=System.Object[]}
-LastLoginAttempts : {@{Success=True; IP=System.Security.SecureString; Timestamp=11/24/2024 2:09:12 PM}, @{Success=False; IP=System.Security.SecureString; Timestamp=11/23/2024 3:09:12 PM}}
-IsTwoFactorAuth   : True
-AuthToken         : System.Security.SecureString
-TwoFactorMethods  : {TOTP, SMS}
-LoginTime         : 11/24/2024 3:09:12 PM
-ApiRateLimits     : @{Limit=5000; Remaining=4985; ResetTime=11/24/2024 3:39:12 PM}
-Repositories      : {@{CreatedDate=5/24/2024 3:09:12 PM; Stars=42; Name=Repo1; IsPrivate=True; Languages=System.Object[]}, @{CreatedDate=11/24/2023 3:09:12 PM; Stars=130; Name=Repo2; IsPrivate=False;
-                    Languages=System.Object[]}}
-SessionMetaData   : @{BrowserInfo=; Device=Windows-PC; Location=; SessionID=sess_abc123}
-Username          : john_doe
-AccessScopes      : {repo, user, gist, admin:org}
 ```
 </details>
 
 ## Installation
 
-Install the module from the PowerShell Gallery by running the following command:
+You can install the module from the PowerShell Gallery using the following command:
 
 ```powershell
 Install-PSResource -Name Context -TrustRepository -Repository PSGallery
@@ -222,101 +64,86 @@ Import-Module -Name Context
 
 ## Usage
 
-As mentioned earlier, there are two types of data that can be stored using the `Context` module: module and user settings and secrets.
-Lets have a look at how to use the module to store these types of data in abit more detail.
+Let's take a closer look at how to store these types of data using the module.
 
-### Module settings
+### Module Settings
 
-To store module data, the module developer can create a `Context` that defines a "namespace" for the module. This `Context` can store settings
-for the module. A module developer can also create additional `Contexts` for additional settings that share the same lifecycle, like settings
-associated with a module extension.
+A module developer can create additional `Contexts` for settings that share the same lifecycle, such as those associated with a module extension.
 
-Let's say we have a module called `GitHub` that needs to store some settings. The module developer could initialize a `Context` called
-`GitHub` as part of the loading section in the module code. All module configuration could be stored in this `Context` by using the functionality in
-this module. The context for the module is stored in the `ContextVault` as a `Context` with the ID `GitHub`.
+For example, if we have a module called `GitHub` that needs to store some settings, the module developer could initialize a `Context` called `GitHub`
+as part of the loading section in the module code. The module configuration is stored in `ContextVault` under the ID `GitHub`.
 
 ### User Configuration
 
-To store user data, the module developer can create a new `Context` that defines a "namespace" for the user configuration. So let's say a developer has
-implemented this for the `GitHub` module, a user would log in using their details. The module would call upon `Context` functionality to create a new
-`Context` under the `GitHub` namespace.
+To store user data, a module developer can create a `Context` that serves as a "namespace" for user-specific configurations.
 
-Imagine a user called `BobMarley` logs in to the `GitHub` module. The following would exist in the `ContextVault`:
+Imagine a user named `BobMarley` logs into the `GitHub` module. The following would exist in `ContextVault`:
 
-- `GitHub` containing module configuration, like default user, host, and client ID to use if not otherwise specified.
-- `GitHub/BobMarley` containing user configuration, details about the user, secrets and default values for API calls etc.
+- `GitHub`: Contains module configuration, like default user, host, and client ID.
+- `GitHub/BobMarley`: Contains user configuration, secrets, and default values for API calls.
 
-Let's say the person also has another account on `GitHub` called `LennyKravitz`. After logging on the second account, the following `Context` would
-also exist in the `ContextVault`:
+If the same user logs in with another account (`LennyKravitz`), an additional `Context` will be created:
 
-- `GitHub/LennyKravitz` containing user configuration, details about the user, secrets and default values for API calls etc.
+- `GitHub/LennyKravitz`: Contains user-specific settings and secrets.
 
-With this the module developer could allow users to set default `Context`, and store a key of the name of that `Context` in the module `Context`. This
-way the module could automatically log in the user to the correct account when the module is loaded. The user could also switch between accounts by
-changing the default `Context`.
+This allows users to set a default `Context`, storing its name in the module `Context`, enabling automatic login to the correct account when the
+module loads. Users can also switch between accounts by changing the default `Context`.
 
 ### Setup for a New Module
 
-To set up a new module to use the `Context` module, the following steps should be taken:
+1. Create a new context for the module:
 
-1. Create a new context for the module -> `Set-Context -ID 'GitHub' -Context @{ ... }` during the module initialization.
-
-`src\variable\private\Config.ps1`
 ```pwsh
-$script:Config = @{
-    Name = 'GitHub'
-}
+Set-Context -ID 'GitHub' -Context @{ Name = 'GitHub' }
 ```
 
-`src\loader.ps1`
+2. Add module configuration:
+
 ```pwsh
-### This is the context config for this module
-$contextParams = @{
-    ID      = 'GitHub'
-    Context = @{
-        Name = 'GitHub'
-    }
-}
-try {
-    Set-Context @contextParams
-} catch {
-    Write-Error $_
-    throw 'Failed to initialize secret vault'
-}
+$context = Get-Context -ID 'GitHub'
+# Modify settings as needed
+Set-Context -ID 'GitHub' -Context $context
 ```
 
-2. Add some module configuration -> `$context = Get-Context -ID 'GitHub'` -> Change settings using the returned object and
-   then `Set-Context -ID 'GitHub' -Context $context` to store the changes.
+### Setup for a New User Context
 
-### Setup for a New user context
-
-To set up a new context for a user, the following steps should be taken:
-
-1. Create a set of public integration functions that uses the `Context` module to store user data. Its highly recommended
-   to do this so that you as a module developer can create the structure you want for the `Context`, while also giving the user the expected function
-   names to interact with the module.
+1. Create a set of public integration functions using the `Context` module to store user data. This is highly recommended, as it allows module
+developers to define a structured `Context` while providing users with familiar function names for interaction.
    - `Set-<ModuleName>Context` that uses `Set-Context`.
    - `Get-<ModuleName>Context` that uses `Get-Context`.
-   - `Remove-<ModuleName>Context` that uses `Remove-Context`
+   - `Remove-<ModuleName>Context` that uses `Remove-Context`.
 
-2. Create a new `Context` for the user `Connect-GitHub ...` -> `Set-Context -ID 'GitHub.BobMarley'` -> `Context` `GitHub/BobMarley` is created.
-3. Add some user configuration -> `$context = Get-Context -ID 'GitHub.BobMarley'` -> Change settings using the returned object and
-then `Set-Context -ID 'GitHub.BobMarley' -Context $context` to store the changes.
-4. Get the user configuration -> `Get-Context -Context 'GitHub/BobMarley'` -> The `Context` object is returned, and you can access the data in it.
+2. Create a new `Context` for the user:
+
+```pwsh
+Connect-GitHub ...
+Set-Context -ID 'GitHub.BobMarley'
+```
+
+3. Modify user configuration:
+
+```pwsh
+$context = Get-Context -ID 'GitHub.BobMarley'
+# Modify settings
+Set-Context -ID 'GitHub.BobMarley' -Context $context
+```
+
+4. Retrieve user configuration:
+
+```pwsh
+Get-Context -ID 'GitHub/BobMarley'
+```
 
 ## Contributing
 
-Coder or not, you can contribute to the project! We welcome all contributions.
-
 ### For Users
 
-If you don't code, you still sit on valuable information that can make this project even better. If you experience that the
-product does unexpected things, throws errors, or is missing functionality, you can help by submitting bugs and feature requests.
-Please see the issues tab on this project and submit a new issue that matches your needs.
+Even if you don’t code, your insights can help improve the project. If you experience unexpected behavior, errors, or missing functionality, submit a
+bug or feature request in the project's issue tracker.
 
 ### For Developers
 
-If you do code, we'd love to have your contributions. Please read the [Contribution guidelines](CONTRIBUTING.md) for more information.
+If you code, we'd love your contributions! Please read the [Contribution Guidelines](CONTRIBUTING.md) for more details.
 
 ## Links
 
