@@ -1,4 +1,4 @@
-function Get-Context {
+﻿function Get-Context {
     <#
         .SYNOPSIS
         Retrieves a context from the in-memory context vault.

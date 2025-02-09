@@ -1,4 +1,4 @@
-#Requires -Modules @{ ModuleName = 'Sodium'; RequiredVersion = '2.1.1' }
+﻿#Requires -Modules @{ ModuleName = 'Sodium'; RequiredVersion = '2.1.1' }
 
 function Set-Context {
     <#
