@@ -1,1 +1,1 @@
-﻿Set-ContextVault
+Set-ContextVault

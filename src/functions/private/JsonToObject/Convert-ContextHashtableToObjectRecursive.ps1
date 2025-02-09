@@ -1,12 +1,13 @@
 ﻿function Convert-ContextHashtableToObjectRecursive {
     <#
         .SYNOPSIS
-        Converts a hashtable to a context object.
+        Converts a hashtable into a structured context object.
 
         .DESCRIPTION
-        This function is used to convert a hashtable to a context object.
-        String values that are prefixed with '[SECURESTRING]', are converted back to SecureString objects.
-        Other values are converted to their original types, like ints, booleans, string, arrays, and nested objects.
+        This function recursively converts a hashtable into a structured PowerShell object.
+        String values prefixed with '[SECURESTRING]' are converted back to SecureString objects.
+        Other values retain their original data types, including integers, booleans, strings, arrays,
+        and nested objects.
 
         .EXAMPLE
         Convert-ContextHashtableToObjectRecursive -Hashtable @{
@@ -18,17 +19,38 @@
             }
         }
 
-        This example converts a hashtable to a context object, where the 'Token' and 'Nested.Token' values are SecureString objects.
+        Output:
+        ```powershell
+        Name   : Test
+        Token  : System.Security.SecureString
+        Nested : @{ Name = Nested; Token = System.Security.SecureString }
+        ```
+
+        This example converts a hashtable into a structured object, where 'Token' and 'Nested.Token'
+        values are SecureString objects.
+
+        .OUTPUTS
+        PSCustomObject.
+
+        .NOTES
+        Returns an object where values are converted to their respective types,
+        including SecureString for sensitive values, arrays for list structures, and nested objects
+        for hashtables.
+
+        .LINK
+        https://psmodule.io/Context/Functions/Convert-ContextHashtableToObjectRecursive
     #>
+
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
         'PSAvoidUsingConvertToSecureStringWithPlainText', '',
-        Justification = 'The securestring is read from the object this function reads.'
+        Justification = 'The SecureString is extracted from the object being processed by this function.'
     )]
     [OutputType([pscustomobject])]
     [CmdletBinding()]
     param (
-        # Hashtable to convert to context object
-        [object] $Hashtable
+        # Hashtable to convert into a structured context object
+        [Parameter(Mandatory)]
+        [hashtable] $Hashtable
     )
 
     begin {
@@ -53,7 +75,7 @@
                     Write-Debug "Converting [$key] as [hashtable]"
                     $result | Add-Member -NotePropertyName $key -NotePropertyValue (Convert-ContextHashtableToObjectRecursive $value)
                 } elseif ($value -is [array]) {
-                    Write-Debug "Converting [$key] as [IEnumerable], including arrays and hashtables"
+                    Write-Debug "Converting [$key] as [array], processing elements individually"
                     $result | Add-Member -NotePropertyName $key -NotePropertyValue @(
                         $value | ForEach-Object {
                             if ($_ -is [hashtable]) {
@@ -64,7 +86,7 @@
                         }
                     )
                 } else {
-                    Write-Debug "Converting [$key] as regular value"
+                    Write-Debug "Adding [$key] as a standard value"
                     $result | Add-Member -NotePropertyName $key -NotePropertyValue $value
                 }
             }

@@ -1,5 +1,4 @@
-﻿#Requires -Modules @{ ModuleName = 'Microsoft.PowerShell.SecretManagement'; RequiredVersion = '1.1.2' }
-#Requires -Modules @{ ModuleName = 'Microsoft.PowerShell.SecretStore'; RequiredVersion = '1.0.6' }
+﻿#Requires -Modules @{ ModuleName = 'Sodium'; RequiredVersion = '2.1.1' }
 
 function Set-ContextVault {
     <#
@@ -7,44 +6,27 @@ function Set-ContextVault {
         Sets the context vault.
 
         .DESCRIPTION
-        Sets the context vault. If the vault does not exist, it will be created and registered.
-
-        The SecretStore is created with the following parameters:
-        - Authentication: None
-        - PasswordTimeout: -1 (infinite)
-        - Interaction: None
-        - Scope: CurrentUser
+        Sets the context vault. If the vault does not exist, it will be initialized.
+        Once the context vault is set, it will be imported into memory.
+        The vault consists of multiple security shards, including a machine-specific shard,
+        a user-specific shard, and a seed shard stored within the vault directory.
 
         .EXAMPLE
         Set-ContextVault
 
-        Sets a context vault named 'ContextVault' using the 'Microsoft.PowerShell.SecretStore' module.
+        Initializes or loads the context vault, setting up necessary key pairs.
 
-        .EXAMPLE
-        Set-ContextVault -Name 'MyVault' -Type 'MyModule'
+        .OUTPUTS
+        None.
 
-        Sets a context vault named 'MyVault' using the 'MyModule' module.
+        .NOTES
+        This function modifies the script-scoped configuration and imports the vault.
 
-        .EXAMPLE
-        Set-ContextVault -PassThru
-
-        Sets a context vault using the default values and returns the secret vault object.
+        .LINK
+        https://psmodule.io/Context/Functions/Set-ContextVault
     #>
-    [OutputType([Microsoft.PowerShell.SecretManagement.SecretVaultInfo])]
     [CmdletBinding(SupportsShouldProcess)]
-    param (
-        # The name of the context vault.
-        [Parameter()]
-        [string] $Name = $script:Config.VaultName,
-
-        # The type of the context vault.
-        [Parameter()]
-        [string] $Type = $script:Config.VaultType,
-
-        # Pass the vault through the pipeline.
-        [Parameter()]
-        [switch] $PassThru
-    )
+    param()
 
     begin {
         $stackPath = Get-PSCallStackPath
@@ -53,46 +35,39 @@ function Set-ContextVault {
 
     process {
         try {
-            $vault = Get-SecretVault -Verbose:$false | Where-Object { $_.ModuleName -eq $Type }
-            if (-not $vault) {
-                Write-Debug "[$Type] - Configuring vault type"
+            Write-Verbose "Loading context vault from [$($script:Config.VaultPath)]"
+            $vaultExists = Test-Path $script:Config.VaultPath
+            Write-Verbose "Vault exists: $vaultExists"
 
-                $vaultParameters = @{
-                    Authentication  = 'None'
-                    PasswordTimeout = -1
-                    Interaction     = 'None'
-                    Scope           = 'CurrentUser'
-                    WarningAction   = 'SilentlyContinue'
-                    Confirm         = $false
-                    Force           = $true
-                    Verbose         = $false
-                }
-                if ($PSCmdlet.ShouldProcess('SecretStore', 'Reset')) {
-                    Reset-SecretStore @vaultParameters
-                }
-                Write-Debug "[$Type] - Done"
-                Write-Debug "[$Name] - Registering vault"
-                $secretVault = @{
-                    Name         = $Name
-                    ModuleName   = $Type
-                    DefaultVault = $true
-                    Description  = 'SecretStore'
-                    Verbose      = $false
-                }
-                if ($PSCmdlet.ShouldProcess('SecretVault', 'Register')) {
-                    $vault = Register-SecretVault @secretVault -PassThru
-                }
-                Write-Debug "[$Name] - Done"
+            if (-not $vaultExists) {
+                Write-Verbose 'Initializing new vault'
+                $null = New-Item -Path $script:Config.VaultPath -ItemType Directory
             }
-            $script:Config.VaultName = $vault.Name
-            Write-Debug "Connected to context vault [$($script:Config.VaultName)]"
+
+            Write-Verbose 'Checking for existing seed shard'
+            $seedShardPath = Join-Path -Path $script:Config.VaultPath -ChildPath $script:Config.SeedShardPath
+            $seedShardExists = Test-Path $seedShardPath
+            Write-Verbose "Seed shard exists: $seedShardExists"
+
+            if (-not $seedShardExists) {
+                Write-Verbose 'Creating new seed shard'
+                $keys = New-SodiumKeyPair
+                Set-Content -Path $seedShardPath -Value "$($keys.PrivateKey)$($keys.PublicKey)"
+            }
+
+            $seedShard = Get-Content -Path $seedShardPath
+            $machineShard = [System.Environment]::MachineName
+            $userShard = [System.Environment]::UserName
+            #$userInputShard = Read-Host -Prompt 'Enter a seed shard' # Eventually 4 shards. +1 for user input.
+            $seed = $machineShard + $userShard + $seedShard + $userInputShard
+            $keys = New-SodiumKeyPair -Seed $seed
+            $script:Config.PrivateKey = $keys.PrivateKey
+            $script:Config.PublicKey = $keys.PublicKey
+            Write-Verbose 'Vault initialized'
             $script:Config.Initialized = $true
         } catch {
             Write-Error $_
             throw 'Failed to initialize context vault'
-        }
-        if ($PassThru) {
-            $vault
         }
     }
 

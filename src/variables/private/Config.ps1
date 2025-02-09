@@ -1,6 +1,7 @@
 ﻿$script:Config = [pscustomobject]@{
-    Initialized  = $false                             # $script:Config.Initialized
-    SecretPrefix = 'Context:'                         # $script:Config.SecretPrefix
-    VaultName    = 'ContextVault'                     # $script:Config.VaultName
-    VaultType    = 'Microsoft.PowerShell.SecretStore' # $script:Config.VaultType
+    Initialized   = $false                                           # Has the vault been initialized?
+    VaultPath     = Join-Path -Path $HOME -ChildPath '.contextvault' # Vault directory path
+    SeedShardPath = 'Context.shard'                                  # Seed shard path (relative to VaultPath)
+    PrivateKey    = $null                                            # Private key (populated on init)
+    PublicKey     = $null                                            # Public key (populated on init)
 }

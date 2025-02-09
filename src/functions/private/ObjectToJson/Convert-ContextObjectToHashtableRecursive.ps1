@@ -19,7 +19,24 @@
             }
         })
 
-        Converts the context object to a hashtable. Converts the AccessToken and NestedAccessToken secure strings to a string representation.
+        Output:
+        ```powershell
+        Name         : MySecret
+        AccessToken  : [SECURESTRING]123123123
+        Nested       : @{Name=MyNestedSecret; NestedAccessToken=[SECURESTRING]123123123}
+        ```
+
+        Converts the context object to a hashtable. Secure strings are converted to a string representation.
+
+        .OUTPUTS
+        hashtable.
+
+        .NOTES
+        Returns a hashtable representation of the input object.
+        Secure strings are converted to prefixed string values.
+
+        .LINK
+        https://psmodule.io/Context/Functions/Convert-ContextObjectToHashtableRecursive
     #>
     [OutputType([hashtable])]
     [CmdletBinding()]

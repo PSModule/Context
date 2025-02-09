@@ -1,27 +1,38 @@
 ﻿function ConvertTo-ContextJson {
     <#
         .SYNOPSIS
-        Takes an object and converts it to a JSON string.
+        Converts an object into a JSON string.
 
         .DESCRIPTION
-        Takes objects or hashtables and converts them to a JSON string.
-        SecureStrings are converted to plain text strings and prefixed with [SECURESTRING]. The conversion is recursive for any nested objects.
-        Use ConvertFrom-ContextJson to convert back to an object.
+        Converts objects or hashtables into a JSON string. SecureStrings are converted to plain text strings and
+        prefixed with `[SECURESTRING]`. The conversion is recursive for any nested objects. The function allows
+        converting back using `ConvertFrom-ContextJson`.
 
         .EXAMPLE
         ConvertTo-ContextJson -Context ([pscustomobject]@{
             Name = 'MySecret'
             AccessToken = '123123123' | ConvertTo-SecureString -AsPlainText -Force
-        })
+        }) -ID 'CTX-001'
 
-        Returns a JSON string representation of the object.
-
+        Output:
         ```json
         {
             "Name": "MySecret",
-            "AccessToken ": "[SECURESTRING]123123123"
+            "AccessToken": "[SECURESTRING]123123123",
+            "ID": "CTX-001"
         }
         ```
+
+        Converts the given object into a JSON string, ensuring SecureStrings are handled properly.
+
+        .OUTPUTS
+        System.String.
+
+        .NOTES
+        A JSON string representation of the provided object, including secure string transformations.
+
+        .LINK
+        https://psmodule.io/Context/Functions/ConvertTo-ContextJson
     #>
     [OutputType([string])]
     [CmdletBinding()]

@@ -13,6 +13,7 @@ BeforeAll {
     Write-Verbose "Vault: $($vault.Count)" -Verbose
     Write-Verbose ($vault | Format-Table | Out-String) -Verbose
     $vault | Unregister-SecretVault -Verbose
+    Remove-Module -Name Context -Force -Verbose
     Import-Module -Name Context -Force -Verbose -Version 999.0.0
 }
 
@@ -178,7 +179,7 @@ Describe 'Functions' {
 
     Context 'Function: Remove-Context' {
         It "Remove-Context -ID 'AContextID' - Should remove the context" {
-            Get-SecretInfo | Remove-Secret
+            Get-Context | Remove-Context
 
             { 1..10 | ForEach-Object {
                     Set-Context -Context @{} -ID "Temp$_"
@@ -243,6 +244,19 @@ Describe 'Functions' {
             { Rename-Context -ID 'TestContext' -NewID $existingID } | Should -Throw
         }
 
+        It 'Sets a context where the ID is in the context data' {
+            $contextData = [PSCustomObject]@{
+                ID   = 'TestContext'
+                Data = 'Some data'
+            }
+
+            { Set-Context -Context $contextData } | Should -Not -Throw
+            $result = Get-Context -ID 'TestContext'
+            $result | Should -Not -BeNullOrEmpty
+            $result.ID | Should -Be 'TestContext'
+            $result.Data | Should -Be 'Some data'
+        }
+
         It 'Renaming a context to an existing context does not throw with force' {
             $existingID = 'ExistingContext'
 
@@ -251,6 +265,49 @@ Describe 'Functions' {
 
             # Attempt to rename the context to an existing context
             { Rename-Context -ID 'TestContext' -NewID $existingID -Force } | Should -Not -Throw
+        }
+    }
+
+    # New tests to verify that pipeline input is fully supported
+    Context 'Pipeline Input support' {
+        It 'Get-Context supports pipeline input as strings' {
+            # Create two contexts to test pipeline input
+            Set-Context -ID 'PipeContext1' -Context @{ Dummy = 1 }
+            Set-Context -ID 'PipeContext2' -Context @{ Dummy = 2 }
+            $result = 'PipeContext1', 'PipeContext2' | Get-Context
+            $result | Should -Not -BeNullOrEmpty
+            $result.ID | Should -Contain 'PipeContext1'
+            $result.ID | Should -Contain 'PipeContext2'
+        }
+
+        It 'Get-Context supports pipeline input by property name' {
+            # Create a context and pass an object with an ID property
+            Set-Context -ID 'PipeContext3' -Context @{ Dummy = 3 }
+            $obj = [PSCustomObject]@{ ID = 'PipeContext3' }
+            $result = $obj | Get-Context
+            $result | Should -Not -BeNullOrEmpty
+            $result.ID | Should -Be 'PipeContext3'
+        }
+
+        It 'Get-ContextInfo supports pipeline input as strings' {
+            # Create two contexts and verify that Get-ContextInfo excludes the Context property
+            Set-Context -ID 'PipeInfo1' -Context @{ Dummy = 1 }
+            Set-Context -ID 'PipeInfo2' -Context @{ Dummy = 2 }
+            $result = 'PipeInfo1', 'PipeInfo2' | Get-ContextInfo
+            $result | Should -Not -BeNullOrEmpty
+            $result.ID | Should -Contain 'PipeInfo1'
+            $result.ID | Should -Contain 'PipeInfo2'
+            $result | ForEach-Object { $_.PSObject.Properties.Name | Should -BeIn @('ID', 'Path') }
+        }
+
+        It 'Get-ContextInfo supports pipeline input by property name' {
+            # Create a context and pass an object with an ID property to Get-ContextInfo
+            Set-Context -ID 'PipeInfo3' -Context @{ Dummy = 3 }
+            $obj = [PSCustomObject]@{ ID = 'PipeInfo3' }
+            $result = $obj | Get-ContextInfo
+            $result | Should -Not -BeNullOrEmpty
+            $result.ID | Should -Be 'PipeInfo3'
+            $result | ForEach-Object { $_.PSObject.Properties.Name | Should -BeIn @('ID', 'Path') }
         }
     }
 }
