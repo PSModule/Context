@@ -63,7 +63,14 @@
                     Write-Debug "Removing context [$_]"
                     if ($PSCmdlet.ShouldProcess($_, 'Remove secret')) {
                         $script:Contexts[$_].Path | Remove-Item -Force
-                        $null = $script:Contexts.Remove($_)
+
+                        Write-Verbose "Attempting to remove context: $_"
+                        [PSCustomObject]$removedItem = $null
+                        if ($script:Contexts.TryRemove($_, [ref]$removedItem)) {
+                            Write-Verbose "Removed item: $removedItem"
+                        } else {
+                            Write-Verbose 'Key not found'
+                        }
                     }
                 }
             }
