@@ -79,17 +79,18 @@ function Set-Context {
                 Write-Verbose "Setting context [$ID] in vault"
                 Set-Content -Path $contextPath -Value $param
                 $content = Get-Content -Path $contextPath
-                $contextJson = $content | ConvertFrom-Json
+                $contextInfoObj = $content | ConvertFrom-Json
                 $params = @{
-                    SealedBox  = $contextJson.Context
+                    SealedBox  = $contextInfoObj.Context
                     PublicKey  = $script:Config.PublicKey
                     PrivateKey = $script:Config.PrivateKey
                 }
-                $context = ConvertFrom-SodiumSealedBox @params
+                $contextObj = ConvertFrom-SodiumSealedBox @params
+                Write-Verbose ($contextObj | Format-List | Out-String)
                 $script:Contexts[$ID] = [PSCustomObject]@{
                     ID       = $ID
                     FileName = $fileName
-                    Context  = ConvertFrom-ContextJson -JsonString $context
+                    Context  = ConvertFrom-ContextJson -JsonString $contextObj
                 }
             }
 

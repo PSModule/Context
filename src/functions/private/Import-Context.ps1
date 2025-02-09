@@ -32,6 +32,8 @@ filter Import-Context {
             Write-Verbose "Found [$($contextFiles.Count)] contexts"
             $contextFiles | ForEach-Object {
                 $contextInfo = Get-Content -Path $_.FullName | ConvertFrom-Json
+                Write-Verbose "Importing context: [$($contextInfo.ID)]"
+                Write-Verbose ($contextInfo | Format-List | Out-String)
                 $params = @{
                     SealedBox  = $contextInfo.Context
                     PublicKey  = $script:Config.PublicKey
