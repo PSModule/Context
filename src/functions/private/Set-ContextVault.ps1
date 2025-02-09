@@ -42,9 +42,10 @@ function Set-ContextVault {
                 Set-Content -Path $seedShardPath -Value "$($keys.PrivateKey)$($keys.PublicKey)"
             }
             $seedShard = Get-Content -Path $seedShardPath
-            $machinename = [System.Environment]::MachineName
-            $username = [System.Environment]::UserName
-            $seed = $machinename + $username + $seedShard
+            $machineShard = [System.Environment]::MachineName
+            $userShard = [System.Environment]::UserName
+            #$userInputShard = Read-Host -Prompt 'Enter a seed shard' # Eventually 4 shards. +1 for user input.
+            $seed = $machineShard + $userShard + $seedShard + $userInputShard
             $keys = New-SodiumKeyPair -Seed $seed
             $script:Config.PrivateKey = $keys.PrivateKey
             $script:Config.PublicKey = $keys.PublicKey
