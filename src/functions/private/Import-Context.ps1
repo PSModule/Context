@@ -11,7 +11,7 @@ filter Import-Context {
         in the script-wide context collection for further use.
 
         .EXAMPLE
-        Import-Context -Verbose
+        Import-Context
 
         Output:
         ```powershell
