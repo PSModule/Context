@@ -23,7 +23,7 @@ When imported, the encrypted data is decrypted, converted back into its original
 security.
 
 <details>
-<summary>Input to Set-Context - As a PSCustomObject</summary>
+<summary>1. Storing data (object or dictionary) in persistent storage using Set-Context</summary>
 
 Typical the first input to a context (altho it can also be a hashtable or any other object type that converts with JSON)
 
@@ -95,7 +95,7 @@ Set-Context -ID 'john_doe' -Context ([PSCustomObject]@{
 </details>
 
 <details>
-<summary>The stored data - As a processed JSON</summary>
+<summary>2. How the data utimatly gets stored - As a processed JSON</summary>
 
 This is how the objecet above is stored, except that this is an uncomressed version for readability.
 Here you see that the `ID` property gets added.
@@ -187,7 +187,7 @@ Here you see that the `ID` property gets added.
 </details>
 
 <details>
-<summary>Output from Get-Context - As a PSCustomObject</summary>
+<summary>3. Imported data (as a PSCustomObject) and shown with Get-Context</summary>
 
 This is how the object is returned from the `Get-Context` function.
 Notice that the `ID` property has been added to the object.
@@ -211,12 +211,6 @@ AccessScopes      : {repo, user, gist, admin:org}
 ```
 </details>
 
-## Prerequisites
-
-This module relies on [Microsoft.PowerShell.SecretManagement](https://github.com/powershell/SecretManagement) and
-[Microsoft.PowerShell.SecretStore](https://github.com/PowerShell/SecretStore). The module automatically installs these modules if they are not
-already installed.
-
 ## Installation
 
 Install the module from the PowerShell Gallery by running the following command:
@@ -233,33 +227,33 @@ Lets have a look at how to use the module to store these types of data in abit m
 
 ### Module settings
 
-To store module data, the module developer can create a context that defines a "namespace" for the module. This context can store settings and secrets
-for the module. A module developer can also create additional contexts for additional settings that share the same lifecycle, like settings
+To store module data, the module developer can create a `Context` that defines a "namespace" for the module. This `Context` can store settings
+for the module. A module developer can also create additional `Contexts` for additional settings that share the same lifecycle, like settings
 associated with a module extension.
 
-Let's say we have a module called `GitHub` that needs to store some settings and secrets. The module developer could initialize a context called
-`GitHub` as part of the loading section in the module code. All module configuration could be stored in this context by using the functionality in
-this module. The context for the module is stored in the `ContextVault` as a secret with the name `GitHub`.
+Let's say we have a module called `GitHub` that needs to store some settings. The module developer could initialize a `Context` called
+`GitHub` as part of the loading section in the module code. All module configuration could be stored in this `Context` by using the functionality in
+this module. The context for the module is stored in the `ContextVault` as a `Context` with the ID `GitHub`.
 
 ### User Configuration
 
-To store user data, the module developer can create a new context that defines a "namespace" for the user configuration. So let's say a developer has
+To store user data, the module developer can create a new `Context` that defines a "namespace" for the user configuration. So let's say a developer has
 implemented this for the `GitHub` module, a user would log in using their details. The module would call upon `Context` functionality to create a new
-context under the `GitHub` namespace.
+`Context` under the `GitHub` namespace.
 
-Imagine a user called `BobMarley` logs in to the `GitHub` module. The following would exist in the context:
+Imagine a user called `BobMarley` logs in to the `GitHub` module. The following would exist in the `ContextVault`:
 
 - `GitHub` containing module configuration, like default user, host, and client ID to use if not otherwise specified.
 - `GitHub/BobMarley` containing user configuration, details about the user, secrets and default values for API calls etc.
 
-Let's say the person also has another account on `GitHub` called `LennyKravitz`. After logging on the second account, the following context would
-also exist in the context:
+Let's say the person also has another account on `GitHub` called `LennyKravitz`. After logging on the second account, the following `Context` would
+also exist in the `ContextVault`:
 
 - `GitHub/LennyKravitz` containing user configuration, details about the user, secrets and default values for API calls etc.
 
-With this the module developer could allow users to set default context, and store a key of the name of that context in the module context. This way
-the module could automatically log in the user to the correct account when the module is loaded. The user could also switch between accounts by
-changing the default context.
+With this the module developer could allow users to set default `Context`, and store a key of the name of that `Context` in the module `Context`. This
+way the module could automatically log in the user to the correct account when the module is loaded. The user could also switch between accounts by
+changing the default `Context`.
 
 ### Setup for a New Module
 
@@ -299,16 +293,16 @@ try {
 To set up a new context for a user, the following steps should be taken:
 
 1. Create a set of public integration functions that uses the `Context` module to store user data. Its highly recommended
-   to do this so that you as a module developer can create the structure you want for the context, while also giving the user the expected function
+   to do this so that you as a module developer can create the structure you want for the `Context`, while also giving the user the expected function
    names to interact with the module.
    - `Set-<ModuleName>Context` that uses `Set-Context`.
    - `Get-<ModuleName>Context` that uses `Get-Context`.
    - `Remove-<ModuleName>Context` that uses `Remove-Context`
 
-2. Create a new context for the user `Connect-GitHub ...` -> `Set-Context -ID 'GitHub.BobMarley'` -> Context `GitHub/BobMarley` is created.
+2. Create a new `Context` for the user `Connect-GitHub ...` -> `Set-Context -ID 'GitHub.BobMarley'` -> `Context` `GitHub/BobMarley` is created.
 3. Add some user configuration -> `$context = Get-Context -ID 'GitHub.BobMarley'` -> Change settings using the returned object and
 then `Set-Context -ID 'GitHub.BobMarley' -Context $context` to store the changes.
-4. Get the user configuration -> `Get-Context -Context 'GitHub/BobMarley'` -> The context object is returned, and you can access the data in it.
+4. Get the user configuration -> `Get-Context -Context 'GitHub/BobMarley'` -> The `Context` object is returned, and you can access the data in it.
 
 ## Contributing
 
