@@ -50,14 +50,14 @@ function Set-Context {
     process {
         try {
             #Do i already have a context for this ID?
-            $existingContext = Get-Context -ID $ID
-            if (-not $existingContext) {
+            $existingContextInfo = $script:Contexts[$ID]
+            if (-not $existingContextInfo) {
                 Write-Verbose "Context [$ID] not found in vault"
                 $Guid = [Guid]::NewGuid().ToString()
                 $fileName = "$Guid.json"
             } else {
                 Write-Verbose "Context [$ID] found in vault"
-                $fileName = $existingContext.FileName
+                $fileName = $existingContextInfo.FileName
             }
 
             try {
