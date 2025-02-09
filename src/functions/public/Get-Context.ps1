@@ -13,8 +13,33 @@
 
         Output:
         ```powershell
-        ID        : Default
-        Context   : {Property1=Value1, Property2=Value2}
+        Repositories      : {@{Languages=System.Object[]; IsPrivate=False; Stars=130;
+                            CreatedDate=2/9/2024 10:45:11 AM; Name=Repo2}}
+        AccessScopes      : {repo, user, gist, admin:org}
+        AuthToken         : ghp_12345ABCDE67890FGHIJ
+        TwoFactorMethods  : {TOTP, SMS}
+        IsTwoFactorAuth   : True
+        ApiRateLimits     : @{ResetTime=2/9/2025 11:15:11 AM; Remaining=4985; Limit=5000}
+        UserPreferences   : @{CodeReview=System.Object[]; Notifications=; Theme=dark; DefaultBranch=main}
+        SessionMetaData   : @{Device=Windows-PC; Location=; BrowserInfo=; SessionID=sess_abc123}
+        LastLoginAttempts : {@{Success=True; Timestamp=2/9/2025 9:45:11 AM; IP=192.168.1.101}, @{Success=False}}
+        ID                : GitHub/User-3
+        Username          : john_doe
+        LoginTime         : 2/9/2025 10:45:11 AM
+
+        Repositories      : {@{Languages=System.Object[]; IsPrivate=False; Stars=130;
+                            CreatedDate=2/9/2024 10:45:11 AM; Name=Repo2}}
+        AccessScopes      : {repo, user, gist, admin:org}
+        AuthToken         : ghp_12345ABCDE67890FGHIJ
+        TwoFactorMethods  : {TOTP, SMS}
+        IsTwoFactorAuth   : True
+        ApiRateLimits     : @{ResetTime=2/9/2025 11:15:11 AM; Remaining=4985; Limit=5000}
+        UserPreferences   : @{CodeReview=System.Object[]; Notifications=; Theme=dark; DefaultBranch=main}
+        SessionMetaData   : @{Device=Windows-PC; Location=; BrowserInfo=; SessionID=sess_abc123}
+        LastLoginAttempts : {@{Success=True; Timestamp=2/9/2025 9:45:11 AM; IP=192.168.1.101}, @{Success=False}}
+        ID                : GitHub/User-8
+        Username          : jane_doe
+        LoginTime         : 2/9/2025 10:45:11 AM
         ```
 
         Retrieves all contexts from the context vault (in memory).
@@ -22,21 +47,25 @@
         .EXAMPLE
         Get-Context -ID 'MySecret'
 
-        Output:
-        ```powershell
-        ID        : MySecret
-        Context   : {Key=EncryptedValue}
-        ```
-
-        Retrieves the context called 'MySecret' from the context vault (in memory).
+        Retrieves the context called 'MySecret' from the vault.
 
         .EXAMPLE
-        Get-Context -ID 'My*'
+        'My*' | Get-Context
 
         Output:
         ```powershell
         ID        : MyConfig
-        Context   : {ConfigKey=ConfigValue}
+        Config    : {ConfigKey=ConfigValue}
+
+        ID        : MySecret
+        Key       : EncryptedValue
+        AuthToken : EncryptedToken
+        Favorite  : {Color=Blue; Number=7}
+
+        ID        : MySettings
+        Setting   : {SettingKey=SettingValue}
+        Config    : {ConfigKey=ConfigValue}
+        YourData  : {DataKey=DataValue}
         ```
 
         Retrieves all contexts that start with 'My' from the context vault (in memory).
@@ -55,10 +84,13 @@
     [CmdletBinding()]
     param(
         # The name of the context to retrieve from the vault. Supports wildcards.
-        [Parameter()]
+        [Parameter(
+            ValueFromPipeline,
+            ValueFromPipelineByPropertyName
+        )]
         [AllowEmptyString()]
         [SupportsWildcards()]
-        [string] $ID = '*'
+        [string[]] $ID = '*'
     )
 
     begin {
@@ -71,13 +103,10 @@
     }
 
     process {
-        try {
-            Write-Debug "Retrieving contexts - ID: [$ID]"
-            $script:Contexts.Values | Where-Object { $_.ID -like $ID } | Select-Object -ExpandProperty Context
-
-        } catch {
-            Write-Error $_
-            throw 'Failed to get context'
+        Write-Debug "Retrieving contexts - ID: [$($ID -join ', ')]"
+        foreach ($item in $ID) {
+            Write-Debug "Retrieving contexts - ID: [$item]"
+            $script:Contexts.Values | Where-Object { $_.ID -like $item } | Select-Object -ExpandProperty Context
         }
     }
 

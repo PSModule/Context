@@ -79,19 +79,8 @@
         }
 
         if ($PSCmdlet.ShouldProcess("Renaming context '$ID' to '$NewID'")) {
-            try {
-                $context | Set-Context -ID $NewID
-            } catch {
-                Write-Error $_
-                throw 'Failed to set new context'
-            }
-
-            try {
-                Remove-Context -ID $ID
-            } catch {
-                Write-Error $_
-                throw 'Failed to remove old context'
-            }
+            $context | Set-Context -ID $NewID
+            Remove-Context -ID $ID
         }
     }
 

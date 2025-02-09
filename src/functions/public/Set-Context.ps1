@@ -70,53 +70,42 @@ function Set-Context {
     }
 
     process {
-        try {
-            $existingContextInfo = $script:Contexts[$ID]
-            if (-not $existingContextInfo) {
-                Write-Verbose "Context [$ID] not found in vault"
-                $Guid = [Guid]::NewGuid().ToString()
-                $Path = Join-Path -Path $script:Config.VaultPath -ChildPath "$Guid.json"
-            } else {
-                Write-Verbose "Context [$ID] found in vault"
-                $Path = $existingContextInfo.Path
-            }
+        $existingContextInfo = $script:Contexts[$ID]
+        if (-not $existingContextInfo) {
+            Write-Verbose "Context [$ID] not found in vault"
+            $Guid = [Guid]::NewGuid().ToString()
+            $Path = Join-Path -Path $script:Config.VaultPath -ChildPath "$Guid.json"
+        } else {
+            Write-Verbose "Context [$ID] found in vault"
+            $Path = $existingContextInfo.Path
+        }
 
-            try {
-                $contextJson = ConvertTo-ContextJson -Context $Context -ID $ID
-            } catch {
-                Write-Error $_
-                throw 'Failed to convert context to JSON'
-            }
+        $contextJson = ConvertTo-ContextJson -Context $Context -ID $ID
 
-            $param = [pscustomobject]@{
+        $param = [pscustomobject]@{
+            ID      = $ID
+            Path    = $Path
+            Context = ConvertTo-SodiumSealedBox -Message $contextJson -PublicKey $script:Config.PublicKey
+        } | ConvertTo-Json -Depth 5
+        Write-Debug ($param | ConvertTo-Json -Depth 5)
+
+        if ($PSCmdlet.ShouldProcess($ID, 'Set context')) {
+            Write-Verbose "Setting context [$ID] in vault"
+            Set-Content -Path $Path -Value $param
+            $content = Get-Content -Path $Path
+            $contextInfoObj = $content | ConvertFrom-Json
+            $params = @{
+                SealedBox  = $contextInfoObj.Context
+                PublicKey  = $script:Config.PublicKey
+                PrivateKey = $script:Config.PrivateKey
+            }
+            $contextObj = ConvertFrom-SodiumSealedBox @params
+            Write-Verbose ($contextObj | Format-List | Out-String)
+            $script:Contexts[$ID] = [PSCustomObject]@{
                 ID      = $ID
                 Path    = $Path
-                Context = ConvertTo-SodiumSealedBox -Message $contextJson -PublicKey $script:Config.PublicKey
-            } | ConvertTo-Json -Depth 5
-            Write-Debug ($param | ConvertTo-Json -Depth 5)
-
-            if ($PSCmdlet.ShouldProcess($ID, 'Set context')) {
-                Write-Verbose "Setting context [$ID] in vault"
-                Set-Content -Path $Path -Value $param
-                $content = Get-Content -Path $Path
-                $contextInfoObj = $content | ConvertFrom-Json
-                $params = @{
-                    SealedBox  = $contextInfoObj.Context
-                    PublicKey  = $script:Config.PublicKey
-                    PrivateKey = $script:Config.PrivateKey
-                }
-                $contextObj = ConvertFrom-SodiumSealedBox @params
-                Write-Verbose ($contextObj | Format-List | Out-String)
-                $script:Contexts[$ID] = [PSCustomObject]@{
-                    ID      = $ID
-                    Path    = $Path
-                    Context = ConvertFrom-ContextJson -JsonString $contextObj
-                }
+                Context = ConvertFrom-ContextJson -JsonString $contextObj
             }
-
-        } catch {
-            Write-Error $_
-            throw 'Failed to set secret'
         }
 
         if ($PassThru) {

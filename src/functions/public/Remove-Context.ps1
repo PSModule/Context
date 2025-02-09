@@ -82,6 +82,7 @@
             ValueFromPipeline,
             ValueFromPipelineByPropertyName
         )]
+        [SupportsWildcards()]
         [string[]] $ID
     )
 
@@ -95,27 +96,22 @@
     }
 
     process {
-        try {
-            foreach ($item in $ID) {
-                Write-Debug "Processing ID [$item]"
-                $script:Contexts.Keys | Where-Object { $_ -like $item } | ForEach-Object {
-                    Write-Debug "Removing context [$_]"
-                    if ($PSCmdlet.ShouldProcess($_, 'Remove secret')) {
-                        $script:Contexts[$_].Path | Remove-Item -Force
+        foreach ($item in $ID) {
+            Write-Debug "Processing ID [$item]"
+            $script:Contexts.Keys | Where-Object { $_ -like $item } | ForEach-Object {
+                Write-Debug "Removing context [$_]"
+                if ($PSCmdlet.ShouldProcess($_, 'Remove secret')) {
+                    $script:Contexts[$_].Path | Remove-Item -Force
 
-                        Write-Verbose "Attempting to remove context: $_"
-                        [PSCustomObject]$removedItem = $null
-                        if ($script:Contexts.TryRemove($_, [ref]$removedItem)) {
-                            Write-Verbose "Removed item: $removedItem"
-                        } else {
-                            Write-Verbose 'Key not found'
-                        }
+                    Write-Verbose "Attempting to remove context: $_"
+                    [PSCustomObject]$removedItem = $null
+                    if ($script:Contexts.TryRemove($_, [ref]$removedItem)) {
+                        Write-Verbose "Removed item: $removedItem"
+                    } else {
+                        Write-Verbose 'Key not found'
                     }
                 }
             }
-        } catch {
-            Write-Error $_
-            throw 'Failed to remove context'
         }
     }
 
