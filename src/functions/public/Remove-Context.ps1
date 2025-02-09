@@ -59,10 +59,10 @@
         try {
             foreach ($item in $ID) {
                 Write-Debug "Processing ID [$item]"
-                $script:Contexts.Values.ID | Where-Object { $_ -like $item } | ForEach-Object {
+                $script:Contexts.ID | Where-Object { $_ -like $item } | ForEach-Object {
                     Write-Debug "Removing context [$_]"
                     if ($PSCmdlet.ShouldProcess($_, 'Remove secret')) {
-                        $script:Contexts[$_].FileName | Remove-Item -Force
+                        $script:Contexts[$_].Path | Remove-Item -Force
                         $null = $script:Contexts.Remove($_)
                     }
                 }

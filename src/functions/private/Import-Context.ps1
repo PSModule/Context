@@ -41,9 +41,9 @@ filter Import-Context {
                 }
                 $context = ConvertFrom-SodiumSealedBox @params
                 $script:Contexts[$contextInfo.ID] = [pscustomobject]@{
-                    ID       = $contextInfo.ID
-                    FileName = $contextInfo.FileName
-                    Context  = ConvertFrom-ContextJson -JsonString $context
+                    ID      = $contextInfo.ID
+                    Path    = $contextInfo.Path
+                    Context = ConvertFrom-ContextJson -JsonString $context
                 }
             }
         } catch {

@@ -54,10 +54,10 @@ function Set-Context {
             if (-not $existingContextInfo) {
                 Write-Verbose "Context [$ID] not found in vault"
                 $Guid = [Guid]::NewGuid().ToString()
-                $fileName = "$Guid.json"
+                $Path = Join-Path -Path $script:Config.VaultPath -ChildPath "$Guid.json"
             } else {
                 Write-Verbose "Context [$ID] found in vault"
-                $fileName = $existingContextInfo.FileName
+                $Path = $existingContextInfo.Path
             }
 
             try {
@@ -68,17 +68,16 @@ function Set-Context {
             }
 
             $param = [pscustomobject]@{
-                ID       = $ID
-                FileName = $fileName
-                Context  = ConvertTo-SodiumSealedBox -Message $contextJson -PublicKey $script:Config.PublicKey
+                ID      = $ID
+                Path    = $Path
+                Context = ConvertTo-SodiumSealedBox -Message $contextJson -PublicKey $script:Config.PublicKey
             } | ConvertTo-Json -Depth 5
             Write-Debug ($param | ConvertTo-Json -Depth 5)
 
             if ($PSCmdlet.ShouldProcess($ID, 'Set context')) {
-                $contextPath = Join-Path -Path $script:Config.VaultPath -ChildPath $fileName
                 Write-Verbose "Setting context [$ID] in vault"
-                Set-Content -Path $contextPath -Value $param
-                $content = Get-Content -Path $contextPath
+                Set-Content -Path $Path -Value $param
+                $content = Get-Content -Path $Path
                 $contextInfoObj = $content | ConvertFrom-Json
                 $params = @{
                     SealedBox  = $contextInfoObj.Context
@@ -88,9 +87,9 @@ function Set-Context {
                 $contextObj = ConvertFrom-SodiumSealedBox @params
                 Write-Verbose ($contextObj | Format-List | Out-String)
                 $script:Contexts[$ID] = [PSCustomObject]@{
-                    ID       = $ID
-                    FileName = $fileName
-                    Context  = ConvertFrom-ContextJson -JsonString $contextObj
+                    ID      = $ID
+                    Path    = $Path
+                    Context = ConvertFrom-ContextJson -JsonString $contextObj
                 }
             }
 
