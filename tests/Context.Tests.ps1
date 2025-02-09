@@ -244,6 +244,19 @@ Describe 'Functions' {
             { Rename-Context -ID 'TestContext' -NewID $existingID } | Should -Throw
         }
 
+        It 'Sets a context where the ID is in the context data' {
+            $contextData = [PSCustomObject]@{
+                ID = 'TestContext'
+                Data = 'Some data'
+            }
+
+            { Set-Context -Context $contextData } | Should -Not -Throw
+            $result = Get-Context -ID 'TestContext'
+            $result | Should -Not -BeNullOrEmpty
+            $result.ID | Should -Be 'TestContext'
+            $result.Data | Should -Be 'Some data'
+        }
+
         It 'Renaming a context to an existing context does not throw with force' {
             $existingID = 'ExistingContext'
 
