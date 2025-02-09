@@ -13,6 +13,7 @@ BeforeAll {
     Write-Verbose "Vault: $($vault.Count)" -Verbose
     Write-Verbose ($vault | Format-Table | Out-String) -Verbose
     $vault | Unregister-SecretVault -Verbose
+    Remove-Module -Name Context -Force -Verbose
     Import-Module -Name Context -Force -Verbose -Version 999.0.0
 }
 
@@ -178,7 +179,7 @@ Describe 'Functions' {
 
     Context 'Function: Remove-Context' {
         It "Remove-Context -ID 'AContextID' - Should remove the context" {
-            Get-SecretInfo | Remove-Secret
+            Get-Context | Remove-Context
 
             { 1..10 | ForEach-Object {
                     Set-Context -Context @{} -ID "Temp$_"
