@@ -1,4 +1,4 @@
-#Requires -Modules @{ ModuleName = 'Microsoft.PowerShell.SecretManagement'; RequiredVersion = '1.1.2' }
+#Requires -Modules @{ ModuleName = 'Sodium'; RequiredVersion = '2.1.1' }
 
 filter Import-Context {
     <#
@@ -27,15 +27,23 @@ filter Import-Context {
 
     process {
         try {
-            Write-Verbose "Importing contexts: [$($script:Config.SecretPrefix)*] from vault: $($script:Config.VaultName)"
-            $secretInfos = Get-SecretInfo -Name "$($script:Config.SecretPrefix)*" -Vault $script:Config.VaultName -Verbose:$false
-            Write-Verbose "Found [$($secretInfos.Count)] secrets"
-            $secretInfos | ForEach-Object {
-                Write-Verbose "- [$($_.Name)]"
-                $secretJson = $_ | Get-Secret -AsPlainText -Verbose:$false
-                $script:Contexts[$_.Name] = ConvertFrom-ContextJson -JsonString $secretJson
+            Write-Verbose "Importing contexts from vault: [$($script:Config.VaultPath)]"
+            $contextFiles = Get-ChildItem -Path $script:Config.VaultPath -Filter *.json -File -Recurse
+            Write-Verbose "Found [$($contextFiles.Count)] contexts"
+            $contextFiles | ForEach-Object {
+                $contextInfo = Get-Content -Path $_.FullName | ConvertFrom-Json
+                $params = @{
+                    SealedBox  = $contextInfo.Context
+                    PublicKey  = $script:Config.PublicKey
+                    PrivateKey = $script:Config.PrivateKey
+                }
+                $context = ConvertFrom-SodiumSealedBox @params
+                $script:Contexts[$contextInfo.ID] = [pscustomobject]@{
+                    ID       = $contextInfo.ID
+                    FileName = $contextInfo.FileName
+                    Context  = ConvertFrom-ContextJson -JsonString $context
+                }
             }
-
         } catch {
             Write-Error $_
             throw 'Failed to get context'

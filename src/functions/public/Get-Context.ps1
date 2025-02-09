@@ -29,13 +29,10 @@ function Get-Context {
     [CmdletBinding()]
     param(
         # The name of the context to retrieve from the vault.
-        [Parameter(
-            ValueFromPipeline,
-            ValueFromPipelineByPropertyName
-        )]
+        [Parameter()]
         [AllowEmptyString()]
         [SupportsWildcards()]
-        [string[]] $ID = '*'
+        [string] $ID = '*'
     )
 
     begin {
@@ -49,10 +46,11 @@ function Get-Context {
 
     process {
         try {
-            foreach ($item in $ID) {
-                Write-Debug "Retrieving contexts like [$item]"
-                $script:Contexts.Values | Where-Object { $_.ID -like $item }
-            }
+            Write-Debug "Retrieving contexts - ID: [$ID]"
+            $script:Contexts.Values | Where-Object { $_.ID -like $ID } | Select-Object -ExpandProperty Context
+
+            # If not supported, do a light load of the context (no decryption). ContextInfo / Context
+
         } catch {
             Write-Error $_
             throw 'Failed to get context'

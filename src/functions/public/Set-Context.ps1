@@ -1,4 +1,4 @@
-#Requires -Modules @{ ModuleName = 'Microsoft.PowerShell.SecretManagement'; RequiredVersion = '1.1.2' }
+#Requires -Modules @{ ModuleName = 'Sodium'; RequiredVersion = '2.1.1' }
 
 function Set-Context {
     <#
@@ -48,40 +48,58 @@ function Set-Context {
     }
 
     process {
-        if (-not $ID) {
-            $ID = $Context.ID
-        }
-        if (-not $ID) {
-            throw 'ID is required in either the ID parameter or the Context object'
-        }
         try {
-            $secret = ConvertTo-ContextJson -Context $Context -ID $ID
-        } catch {
-            Write-Error $_
-            throw 'Failed to convert context to JSON'
-        }
-
-        $Name = "$($script:Config.SecretPrefix)$ID"
-        $param = @{
-            Name   = $Name
-            Secret = $secret
-            Vault  = $script:Config.VaultName
-        }
-        Write-Debug ($param | ConvertTo-Json -Depth 5)
-
-        try {
-            if ($PSCmdlet.ShouldProcess($Name, 'Set Secret')) {
-                Set-Secret @param
-                $data = ConvertFrom-ContextJson -JsonString $secret
-                $script:Contexts[$Name] = $data
+            #Do i already have a context for this ID?
+            $existingContext = Get-Context -ID $ID
+            if (-not $existingContext) {
+                Write-Verbose "Context [$ID] not found in vault"
+                $Guid = [Guid]::NewGuid().ToString()
+                $fileName = "$Guid.json"
+            } else {
+                Write-Verbose "Context [$ID] found in vault"
+                $fileName = $existingContext.FileName
             }
+
+            try {
+                $contextJson = ConvertTo-ContextJson -Context $Context -ID $ID
+            } catch {
+                Write-Error $_
+                throw 'Failed to convert context to JSON'
+            }
+
+            $param = [pscustomobject]@{
+                ID       = $ID
+                FileName = $fileName
+                Context  = ConvertTo-SodiumSealedBox -Message $contextJson -PublicKey $script:Config.PublicKey
+            } | ConvertTo-Json -Depth 5
+            Write-Debug ($param | ConvertTo-Json -Depth 5)
+
+            if ($PSCmdlet.ShouldProcess($ID, 'Set context')) {
+                $contextPath = Join-Path -Path $script:Config.VaultPath -ChildPath $fileName
+                Write-Verbose "Setting context [$ID] in vault"
+                Set-Content -Path $contextPath -Value $param
+                $content = Get-Content -Path $contextPath
+                $contextJson = $content | ConvertFrom-Json
+                $params = @{
+                    SealedBox  = $contextJson.Context
+                    PublicKey  = $script:Config.PublicKey
+                    PrivateKey = $script:Config.PrivateKey
+                }
+                $context = ConvertFrom-SodiumSealedBox @params
+                $script:Contexts[$ID] = [PSCustomObject]@{
+                    ID       = $ID
+                    FileName = $fileName
+                    $Context = ConvertFrom-ContextJson -JsonString $context
+                }
+            }
+
         } catch {
             Write-Error $_
             throw 'Failed to set secret'
         }
 
         if ($PassThru) {
-            $data
+            Get-Context -ID $ID
         }
     }
 
