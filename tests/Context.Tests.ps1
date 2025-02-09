@@ -284,7 +284,7 @@ Describe 'Functions' {
             $result | Should -Not -BeNullOrEmpty
             $result.ID | Should -Contain 'PipeInfo1'
             $result.ID | Should -Contain 'PipeInfo2'
-            $result.PSObject.Properties.Name | Should -Not -Contain Context
+            $result.PSObject.Properties.Name | Should -BeIn @('ID', 'Path')
         }
 
         It 'Get-ContextInfo supports pipeline input by property name' {
@@ -295,7 +295,7 @@ Describe 'Functions' {
             $result | Should -
             $result | Should -Not -BeNullOrEmpty
             $result.ID | Should -Be 'PipeInfo3'
-            $result.PSObject.Properties.Name | Should -Not -Contain Context
+            $result.PSObject.Properties.Name | Should -BeIn @('ID', 'Path')
         }
     }
 }
