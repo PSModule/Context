@@ -89,7 +89,7 @@ function Set-Context {
                 $script:Contexts[$ID] = [PSCustomObject]@{
                     ID       = $ID
                     FileName = $fileName
-                    $Context = ConvertFrom-ContextJson -JsonString $context
+                    Context  = ConvertFrom-ContextJson -JsonString $context
                 }
             }
 
