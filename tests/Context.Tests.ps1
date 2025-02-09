@@ -246,7 +246,7 @@ Describe 'Functions' {
 
         It 'Sets a context where the ID is in the context data' {
             $contextData = [PSCustomObject]@{
-                ID = 'TestContext'
+                ID   = 'TestContext'
                 Data = 'Some data'
             }
 
