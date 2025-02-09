@@ -65,7 +65,10 @@
         Accepts pipeline input: multiple objects each having an ID property.
 
         .OUTPUTS
-        System.String. Returns the name of each removed context if successful.
+        [System.String]
+
+        .NOTES
+        Returns the name of each removed context if successful.
 
         .LINK
         https://psmodule.io/Context/Functions/Remove-Context/

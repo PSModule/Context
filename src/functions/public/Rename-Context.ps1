@@ -30,7 +30,10 @@
         Renames the context 'PSModule.GitHub' to 'PSModule.GitHub2' using pipeline input.
 
         .OUTPUTS
-        System.String. The confirmation message indicating the successful renaming of the context.
+        [System.String]
+
+        .NOTES
+        The confirmation message indicating the successful renaming of the context.
 
         .LINK
         https://psmodule.io/Context/Functions/Rename-Context/

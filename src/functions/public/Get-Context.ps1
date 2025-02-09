@@ -42,7 +42,10 @@
         Retrieves all contexts that start with 'My' from the context vault (in memory).
 
         .OUTPUTS
-        System.Object. Returns a list of contexts matching the specified ID or all contexts if no ID is specified.
+        [System.Object]
+
+        .NOTES
+        Returns a list of contexts matching the specified ID or all contexts if no ID is specified.
         Each context object contains its ID and corresponding stored properties.
 
         .LINK

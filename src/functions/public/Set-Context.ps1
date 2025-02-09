@@ -35,7 +35,10 @@ function Set-Context {
         Creates a context called 'MySecret' in the vault with additional settings.
 
         .OUTPUTS
-        [PSCustomObject]. Returns an object representing the stored or updated context.
+        [PSCustomObject]
+
+        .NOTES
+        Returns an object representing the stored or updated context.
         The object includes the ID, path, and securely stored context information.
 
         .LINK
