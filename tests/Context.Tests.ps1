@@ -258,13 +258,14 @@ Describe 'Functions' {
 
         It 'can save 200 contexts concurrently' {
             # Clean up any pre-existing stress test contexts
-            Get-Context -ID 'StressContext_*' | Remove-Context -Verbose
+            Get-Context | Remove-Context -Verbose
 
             # Save 200 contexts concurrently using parallel processing
             1..200 | ForEach-Object -Parallel {
-                param($i)
-                $id = "StressContext_$i"
-                Set-Context -ID $id -Context @{ Value = $i } | Out-Null
+                Remove-Module -Name Context -Force -Verbose
+                Import-Module -Name Context -Force -Verbose -Version 999.0.0
+                $id = "StressContext_$_"
+                Set-Context -ID $id
             } -ThrottleLimit 50
 
             # Verify that 200 contexts were created successfully
@@ -274,16 +275,19 @@ Describe 'Functions' {
         It 'can remove 200 contexts concurrently' {
             # First, create 200 contexts synchronously for removal testing
             1..200 | ForEach-Object {
-                $id = "RemoveStressContext_$($_)"
-                Set-Context -ID $id -Context @{ Value = $_ } | Out-Null
+                $id = "RemoveStressContext_$_"
+                Set-Context -ID $id
             }
+
+            # Verify that 200 contexts were created successfully
         (Get-Context -ID 'RemoveStressContext_*').Count | Should -Be 200
 
             # Remove the 200 contexts concurrently using parallel processing
             1..200 | ForEach-Object -Parallel {
-                param($i)
-                $id = "RemoveStressContext_$i"
-                Remove-Context -ID $id | Out-Null
+                Remove-Module -Name Context -Force -Verbose
+                Import-Module -Name Context -Force -Verbose -Version 999.0.0
+                $id = "RemoveStressContext_$_"
+                Remove-Context -ID $id
             } -ThrottleLimit 50
 
             # Verify that all contexts have been removed
