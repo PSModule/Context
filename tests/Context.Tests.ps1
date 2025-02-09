@@ -18,7 +18,7 @@ BeforeAll {
 }
 
 Describe 'Functions' {
-    Get-Context 'Function: Set-Context' {
+    Context 'Function: Set-Context' {
         It "Set-Context -ID 'TestID1'" {
             { Set-Context -ID 'TestID1' } | Should -Not -Throw
             $result = Get-Context -ID 'TestID1'
@@ -152,7 +152,7 @@ Describe 'Functions' {
         # }
     }
 
-    Get-Context 'Function: Get-Context' {
+    Context 'Function: Get-Context' {
         It 'Get-Context - Should return all contexts' {
             Write-Verbose (Get-Context | Out-String) -Verbose
             (Get-Context).Count | Should -Be 3
@@ -177,7 +177,7 @@ Describe 'Functions' {
         }
     }
 
-    Get-Context 'Function: Remove-Context' {
+    Context 'Function: Remove-Context' {
         It "Remove-Context -ID 'AContextID' - Should remove the context" {
             Get-Context | Remove-Context
 
@@ -205,7 +205,7 @@ Describe 'Functions' {
         }
     }
 
-    Get-Context 'Function: Rename-Context' {
+    Context 'Function: Rename-Context' {
         BeforeEach {
             # Ensure no contexts exist before starting tests
             Get-Context | Remove-Context
@@ -256,7 +256,7 @@ Describe 'Functions' {
     }
 
     # New tests to verify that pipeline input is fully supported
-    Get-Context 'Pipeline Input support' {
+    Context 'Pipeline Input support' {
         It 'Get-Context supports pipeline input as strings' {
             # Create two contexts to test pipeline input
             Set-Context -ID 'PipeContext1' -Context @{ Dummy = 1 }
