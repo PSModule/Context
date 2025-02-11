@@ -5,14 +5,10 @@
 param()
 
 BeforeAll {
-    $secrets = Get-SecretInfo -Verbose
-    Write-Verbose "Secrets: $($secrets.Count)" -Verbose
-    Write-Verbose ($secrets | Format-Table | Out-String) -Verbose
-    $secrets | Remove-Secret -Verbose
-    $vault = Get-SecretVault -Verbose
-    Write-Verbose "Vault: $($vault.Count)" -Verbose
-    Write-Verbose ($vault | Format-Table | Out-String) -Verbose
-    $vault | Unregister-SecretVault -Verbose
+    $contexts = Get-ContextInfo -Verbose
+    Write-Verbose "Contexts: $($contexts.Count)" -Verbose
+    Write-Verbose ($contexts | Format-Table | Out-String) -Verbose
+    $contexts | Remove-Context -Verbose
     Remove-Module -Name Context -Force -Verbose
     Import-Module -Name Context -Force -Verbose -Version 999.0.0
 }
