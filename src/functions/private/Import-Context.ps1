@@ -9,6 +9,10 @@ filter Import-Context {
         Imports all context files from the context vault directory into memory.
         Each context is decrypted using the configured private key and stored
         in the script-wide context collection for further use.
+        Supports importing from specific vaults in multi-vault setups.
+
+        .PARAMETER VaultName
+        Optional name of the vault to import. If not specified, imports from the current vault.
 
         .EXAMPLE
         Import-Context
@@ -20,7 +24,12 @@ filter Import-Context {
         VERBOSE: Importing context: [123456]
         ```
 
-        Imports all contexts from the context vault into memory.
+        Imports all contexts from the current context vault into memory.
+
+        .EXAMPLE
+        Import-Context -VaultName "WorkVault"
+
+        Imports all contexts from the specified "WorkVault" into memory.
 
         .OUTPUTS
         [pscustomobject].
@@ -33,13 +42,24 @@ filter Import-Context {
     #>
     [OutputType([object])]
     [CmdletBinding()]
-    param()
+    param(
+        # Optional name of the vault to import from
+        [Parameter()]
+        [string] $VaultName
+    )
 
     begin {
         $stackPath = Get-PSCallStackPath
         Write-Debug "[$stackPath] - Start"
         if (-not $script:Config.Initialized) {
-            Set-ContextVault
+            if ($VaultName) {
+                Set-ContextVault -VaultName $VaultName
+            } else {
+                Set-ContextVault
+            }
+        } elseif ($VaultName -and $VaultName -ne $script:Config.CurrentVault) {
+            # Switch to specified vault
+            Set-ContextVault -VaultName $VaultName
         }
     }
 
