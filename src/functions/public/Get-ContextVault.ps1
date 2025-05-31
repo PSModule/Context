@@ -8,9 +8,6 @@
         including their names, paths, and creation dates.
         Shows which vault is currently set as the default.
 
-        .PARAMETER Name
-        Optional name filter to get information about a specific vault.
-
         .EXAMPLE
         Get-ContextVault
 
@@ -48,7 +45,7 @@
     [OutputType([PSCustomObject[]])]
     [CmdletBinding()]
     param(
-        # Optional name filter for a specific vault
+        # Optional name filter to get information about a specific vault
         [Parameter()]
         [string] $Name
     )
