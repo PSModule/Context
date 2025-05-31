@@ -60,8 +60,9 @@ function Set-ContextVault {
             $targetVaultPath = $null
 
             if ($VaultName) {
-                # Specific vault requested
-                if (-not $multiVaultsExist -or -not ($vaultConfig.Vaults.PSObject.Properties.Name -contains $VaultName)) {
+                # Specific vault requested - reload config to ensure we have latest vaults
+                $vaultConfig = Get-VaultConfig
+                if (-not $vaultConfig.Vaults -or -not ($vaultConfig.Vaults.PSObject.Properties.Name -contains $VaultName)) {
                     throw "Vault '$VaultName' does not exist. Use New-ContextVault to create it first."
                 }
                 $targetVaultName = $VaultName
@@ -111,6 +112,10 @@ function Set-ContextVault {
                 $targetVaultPath = $vaultConfig.Vaults.default.Path
             }
 
+            # Update script config with current vault information
+            $script:Config.CurrentVault = $targetVaultName
+            $script:Config.Vaults[$targetVaultName] = $vaultConfig.Vaults.$targetVaultName
+
             Write-Verbose "Loading context vault '$targetVaultName' from [$targetVaultPath]"
             $vaultExists = Test-Path $targetVaultPath
             Write-Verbose "Vault exists: $vaultExists"
@@ -139,7 +144,6 @@ function Set-ContextVault {
             $keys = New-SodiumKeyPair -Seed $seed
             $script:Config.PrivateKey = $keys.PrivateKey
             $script:Config.PublicKey = $keys.PublicKey
-            $script:Config.CurrentVault = $targetVaultName
             $script:Config.VaultPath = $targetVaultPath  # Update current vault path
             Write-Verbose "Vault '$targetVaultName' initialized"
             $script:Config.Initialized = $true

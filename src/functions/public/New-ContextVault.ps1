@@ -90,17 +90,32 @@ function New-ContextVault {
                 }
 
                 # Add vault to configuration
-                if (-not $vaultConfig.Vaults) {
-                    $vaultConfig.Vaults = [PSCustomObject]@{}
-                }
-                
                 $vaultInfo = [PSCustomObject]@{
                     Name = $Name
                     Path = $vaultPath
                     Created = Get-Date
                 }
 
-                $vaultConfig.Vaults | Add-Member -MemberType NoteProperty -Name $Name -Value $vaultInfo
+                # Create new vaults object with the additional vault
+                if (-not $vaultConfig.Vaults) {
+                    $vaultConfig.Vaults = @{}
+                }
+                
+                # Convert to hashtable for easier manipulation
+                $vaultsHashtable = @{}
+                if ($vaultConfig.Vaults -is [PSCustomObject]) {
+                    foreach ($property in $vaultConfig.Vaults.PSObject.Properties) {
+                        $vaultsHashtable[$property.Name] = $property.Value
+                    }
+                } else {
+                    $vaultsHashtable = $vaultConfig.Vaults
+                }
+                
+                # Add the new vault
+                $vaultsHashtable[$Name] = $vaultInfo
+                
+                # Convert back to PSCustomObject
+                $vaultConfig.Vaults = [PSCustomObject]$vaultsHashtable
 
                 # Set as default vault if this is the first vault
                 if (-not $vaultConfig.DefaultVault) {

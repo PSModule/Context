@@ -72,17 +72,18 @@
             
             foreach ($vaultProperty in $vaultConfig.Vaults.PSObject.Properties) {
                 $vaultInfo = $vaultProperty.Value
+                $vaultName = $vaultProperty.Name
                 
                 # Skip if Name filter is specified and doesn't match
-                if ($Name -and $vaultInfo.Name -ne $Name) {
+                if ($Name -and $vaultName -ne $Name) {
                     continue
                 }
                 
                 $result = [PSCustomObject]@{
-                    Name = $vaultInfo.Name
+                    Name = $vaultName
                     Path = $vaultInfo.Path
                     Created = $vaultInfo.Created
-                    IsDefault = ($vaultInfo.Name -eq $vaultConfig.DefaultVault)
+                    IsDefault = ($vaultName -eq $vaultConfig.DefaultVault)
                 }
                 
                 $results += $result
