@@ -22,7 +22,7 @@ prefix before encryption, ensuring they can be safely restored as secure strings
 When imported, the encrypted data is decrypted, converted back into its original structured format, and held in memory, ensuring both usability and
 security.
 
-#### 1. Storing data (object or dictionary) in persistent storage using `Set-Context`
+### 1. Storing data (object or dictionary) in persistent storage using `Set-Context`
 
 Typically, the first input to a `Context` is an object (though it can also be a hashtable or any other type that converts to JSON).
 
@@ -41,7 +41,7 @@ Set-Context -ID 'john_doe' -Context ([PSCustomObject]@{
 
 </details>
 
-#### 2. The context after preparing it for saving to file.
+### 2. The context after preparing it for saving to file.
 
 This is how the context object above is prepared before being encrypted and stored on disk. Notice that the `ID` property gets added.
 
@@ -61,7 +61,7 @@ This is how the context object above is prepared before being encrypted and stor
 
 </details>
 
-#### 3. How the data is ultimately stored – as processed JSON
+### 3. How the data is ultimately stored – as processed JSON
 
 This is how the context object above is stored after being encrypted.
 
