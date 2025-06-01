@@ -25,7 +25,9 @@ security.
 <details>
 <summary> 1. Storing data (object or dictionary) in persistent storage using `Set-Context` </summary>
 
+<p>
 Typically, the first input to a `Context` is an object (though it can also be a hashtable or any other type that converts to JSON).
+</p>
 
 ```pwsh
 Set-Context -ID 'john_doe' -Context ([PSCustomObject]@{
@@ -41,7 +43,9 @@ Set-Context -ID 'john_doe' -Context ([PSCustomObject]@{
 <details>
 <summary> 2. The context after preparing it for saving to file. </summary>
 
+<p>
 This is how the context object above is prepared before being encrypted and stored on disk. Notice that the `ID` property gets added.
+</p>
 
 ```json
 {
@@ -56,7 +60,9 @@ This is how the context object above is prepared before being encrypted and stor
 <details>
 <summary> 3. How the data is ultimately stored – as processed JSON </summary>
 
+<p>
 This is how the context object above is stored after being encrypted.
+</p>
 
 ```json
 {
