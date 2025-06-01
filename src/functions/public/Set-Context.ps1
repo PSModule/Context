@@ -1,4 +1,4 @@
-﻿#Requires -Modules @{ ModuleName = 'Sodium'; RequiredVersion = '2.2.0' }
+﻿#Requires -Modules @{ ModuleName = 'Sodium'; RequiredVersion = '2.1.2' }
 
 function Set-Context {
     <#
@@ -84,7 +84,7 @@ function Set-Context {
             $ID = $Context.ID
         }
         if (-not $ID) {
-            throw "An ID is required, either as a parameter or as a property of the context object."
+            throw 'An ID is required, either as a parameter or as a property of the context object.'
         }
         $existingContextFile = $null
         # Check if context already exists by scanning disk files
