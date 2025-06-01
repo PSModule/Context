@@ -2,21 +2,14 @@
     param($commandName, $parameterName, $wordToComplete, $commandAst, $fakeBoundParameter)
     $null = $commandName, $parameterName, $wordToComplete, $commandAst, $fakeBoundParameter
 
-    # Read context IDs directly from disk for tab completion
-    if ($script:Config.Initialized -and (Test-Path $script:Config.VaultPath)) {
-        $contextFiles = Get-ChildItem -Path $script:Config.VaultPath -Filter *.json -File -Recurse -ErrorAction SilentlyContinue
-        $contextIds = @()
-        foreach ($file in $contextFiles) {
-            try {
-                $contextInfo = Get-Content -Path $file.FullName | ConvertFrom-Json
-                $contextIds += $contextInfo.ID
-            } catch {
-                # Skip invalid files
-            }
-        }
-        $contextIds | Where-Object { $_ -like "$wordToComplete*" } |
+    # Use Get-ContextInfo to get available context IDs for tab completion
+    try {
+        $contextInfos = Get-ContextInfo -ErrorAction SilentlyContinue
+        $contextInfos | Where-Object { $_.ID -like "$wordToComplete*" } |
             ForEach-Object {
-                [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_)
+                [System.Management.Automation.CompletionResult]::new($_.ID, $_.ID, 'ParameterValue', $_.ID)
             }
+    } catch {
+        # Silently fail if Get-ContextInfo is not available or vault is not accessible
     }
 }
