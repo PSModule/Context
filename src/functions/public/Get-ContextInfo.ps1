@@ -1,12 +1,13 @@
 ﻿function Get-ContextInfo {
     <#
         .SYNOPSIS
-        Retrieves info about a context from the in-memory context vault.
+        Retrieves info about a context from the context vault.
 
         .DESCRIPTION
-        Retrieves info about context from the loaded contexts stored in memory.
+        Retrieves info about context files directly from the vault directory on disk.
         If no ID is specified, all available info on contexts will be returned.
         Wildcards are supported to match multiple contexts.
+        Only metadata (ID and Path) is returned without decrypting the context contents.
 
         .EXAMPLE
         Get-ContextInfo
@@ -29,7 +30,7 @@
         Path : ...\feacc853-5bea-48d1-b751-41ce9768d48e.json
         ```
 
-        Retrieves all contexts from the context vault (in memory).
+        Retrieves all contexts from the context vault (directly from disk).
 
         .EXAMPLE
         Get-ContextInfo -ID 'MySecret'
@@ -40,7 +41,7 @@
         Path : ...\3e223259-f242-4e97-91c8-f0fd054cfea7.json
         ```
 
-        Retrieves the context called 'MySecret' from the context vault (in memory).
+        Retrieves the context called 'MySecret' from the context vault (directly from disk).
 
         .EXAMPLE
         'My*' | Get-ContextInfo
@@ -57,7 +58,7 @@
         Path : .../b7c01dbe-bccd-4c7e-b075-c5aac1c43b1a.json
         ```
 
-        Retrieves all contexts that start with 'My' from the context vault (in memory).
+        Retrieves all contexts that start with 'My' from the context vault (directly from disk).
 
         .OUTPUTS
         [System.Object]
@@ -94,7 +95,22 @@
     process {
         Write-Verbose "Retrieving context info - ID: [$ID]"
         foreach ($item in $ID) {
-            $script:Contexts.Values | Where-Object { $_.ID -like $item } | Select-Object -ExcludeProperty Context
+            # Read context files directly from disk instead of using in-memory cache
+            $contextFiles = Get-ChildItem -Path $script:Config.VaultPath -Filter *.json -File -Recurse
+            foreach ($file in $contextFiles) {
+                try {
+                    $contextInfo = Get-Content -Path $file.FullName | ConvertFrom-Json
+                    if ($contextInfo.ID -like $item) {
+                        # Return only metadata (ID and Path), don't decrypt the Context property
+                        [PSCustomObject]@{
+                            ID   = $contextInfo.ID
+                            Path = $contextInfo.Path
+                        }
+                    }
+                } catch {
+                    Write-Warning "Failed to read context file: $($file.FullName). Error: $_"
+                }
+            }
         }
     }
 

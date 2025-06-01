@@ -7,7 +7,7 @@ function Set-ContextVault {
 
         .DESCRIPTION
         Sets the context vault. If the vault does not exist, it will be initialized.
-        Once the context vault is set, it will be imported into memory.
+        Once the context vault is set, the keys will be prepared for use.
         The vault consists of multiple security shards, including a machine-specific shard,
         a user-specific shard, and a seed shard stored within the vault directory.
 
@@ -20,7 +20,7 @@ function Set-ContextVault {
         None.
 
         .NOTES
-        This function modifies the script-scoped configuration and imports the vault.
+        This function modifies the script-scoped configuration and prepares the vault for use.
 
         .LINK
         https://psmodule.io/Context/Functions/Set-ContextVault
@@ -73,6 +73,6 @@ function Set-ContextVault {
 
     end {
         Write-Debug "[$stackPath] - End"
-        Import-Context
+        # Note: No longer importing all contexts into memory for better cross-process sharing
     }
 }

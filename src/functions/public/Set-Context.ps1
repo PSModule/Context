@@ -7,8 +7,8 @@ function Set-Context {
 
         .DESCRIPTION
         If the context does not exist, it will be created. If it already exists, it will be updated.
-        The context is cached in memory for faster access. This function ensures that the context
-        is securely stored using encryption mechanisms.
+        The context is securely stored on disk using encryption mechanisms.
+        Each context operation reads the current state from disk to ensure consistency across processes.
 
         .EXAMPLE
         Set-Context -ID 'PSModule.GitHub' -Context @{ Name = 'MySecret' }
@@ -86,14 +86,28 @@ function Set-Context {
         if (-not $ID) {
             throw "An ID is required, either as a parameter or as a property of the context object."
         }
-        $existingContextInfo = $script:Contexts[$ID]
-        if (-not $existingContextInfo) {
+        $existingContextFile = $null
+        # Check if context already exists by scanning disk files
+        $contextFiles = Get-ChildItem -Path $script:Config.VaultPath -Filter *.json -File -Recurse
+        foreach ($file in $contextFiles) {
+            try {
+                $contextInfo = Get-Content -Path $file.FullName | ConvertFrom-Json
+                if ($contextInfo.ID -eq $ID) {
+                    $existingContextFile = $file
+                    $Path = $contextInfo.Path
+                    break
+                }
+            } catch {
+                Write-Warning "Failed to read context file: $($file.FullName). Error: $_"
+            }
+        }
+        
+        if (-not $existingContextFile) {
             Write-Verbose "Context [$ID] not found in vault"
             $Guid = [Guid]::NewGuid().ToString()
             $Path = Join-Path -Path $script:Config.VaultPath -ChildPath "$Guid.json"
         } else {
             Write-Verbose "Context [$ID] found in vault"
-            $Path = $existingContextInfo.Path
         }
 
         $contextJson = ConvertTo-ContextJson -Context $Context -ID $ID
@@ -108,20 +122,6 @@ function Set-Context {
         if ($PSCmdlet.ShouldProcess($ID, 'Set context')) {
             Write-Verbose "Setting context [$ID] in vault"
             Set-Content -Path $Path -Value $param
-            $content = Get-Content -Path $Path
-            $contextInfoObj = $content | ConvertFrom-Json
-            $params = @{
-                SealedBox  = $contextInfoObj.Context
-                PublicKey  = $script:Config.PublicKey
-                PrivateKey = $script:Config.PrivateKey
-            }
-            $contextObj = ConvertFrom-SodiumSealedBox @params
-            Write-Verbose ($contextObj | Format-List | Out-String)
-            $script:Contexts[$ID] = [PSCustomObject]@{
-                ID      = $ID
-                Path    = $Path
-                Context = ConvertFrom-ContextJson -JsonString $contextObj
-            }
         }
 
         if ($PassThru) {

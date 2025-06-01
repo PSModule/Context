@@ -98,18 +98,20 @@
     process {
         foreach ($item in $ID) {
             Write-Verbose "Processing ID [$item]"
-            $script:Contexts.Keys | Where-Object { $_ -like $item } | ForEach-Object {
-                Write-Verbose "Removing context [$_]"
-                if ($PSCmdlet.ShouldProcess($_, 'Remove secret')) {
-                    $script:Contexts[$_].Path | Remove-Item -Force
-
-                    Write-Verbose "Attempting to remove context: $_"
-                    [PSCustomObject]$removedItem = $null
-                    if ($script:Contexts.TryRemove($_, [ref]$removedItem)) {
-                        Write-Verbose "Removed item: $removedItem"
-                    } else {
-                        Write-Verbose 'Key not found'
+            # Find contexts by scanning disk files instead of using in-memory cache
+            $contextFiles = Get-ChildItem -Path $script:Config.VaultPath -Filter *.json -File -Recurse
+            foreach ($file in $contextFiles) {
+                try {
+                    $contextInfo = Get-Content -Path $file.FullName | ConvertFrom-Json
+                    if ($contextInfo.ID -like $item) {
+                        Write-Verbose "Removing context [$($contextInfo.ID)]"
+                        if ($PSCmdlet.ShouldProcess($contextInfo.ID, 'Remove secret')) {
+                            $file.FullName | Remove-Item -Force
+                            Write-Verbose "Removed context file: $($file.FullName)"
+                        }
                     }
+                } catch {
+                    Write-Warning "Failed to read context file: $($file.FullName). Error: $_"
                 }
             }
         }
