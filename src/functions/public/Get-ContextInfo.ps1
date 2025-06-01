@@ -79,7 +79,11 @@
         )]
         [AllowEmptyString()]
         [SupportsWildcards()]
-        [string[]] $ID = '*'
+        [string[]] $ID = '*',
+
+        # The name of the vault to retrieve context info from.
+        [Parameter()]
+        [string] $VaultName
     )
 
     begin {
@@ -87,7 +91,14 @@
         Write-Debug "[$stackPath] - Start"
 
         if (-not $script:Config.Initialized) {
-            Set-ContextVault
+            if ($VaultName) {
+                Set-ContextVault -VaultName $VaultName
+            } else {
+                Set-ContextVault
+            }
+        } elseif ($VaultName -and $VaultName -ne $script:Config.CurrentVault) {
+            # Switch to specified vault
+            Set-ContextVault -VaultName $VaultName
         }
     }
 

@@ -50,6 +50,11 @@
         Retrieves the context called 'MySecret' from the vault.
 
         .EXAMPLE
+        Get-Context -ID 'MySecret' -VaultName "WorkVault"
+
+        Retrieves the context called 'MySecret' from the specified "WorkVault".
+
+        .EXAMPLE
         'My*' | Get-Context
 
         Output:
@@ -90,7 +95,11 @@
         )]
         [AllowEmptyString()]
         [SupportsWildcards()]
-        [string[]] $ID = '*'
+        [string[]] $ID = '*',
+
+        # The name of the vault to retrieve contexts from.
+        [Parameter()]
+        [string] $VaultName
     )
 
     begin {
@@ -98,7 +107,14 @@
         Write-Debug "[$stackPath] - Start"
 
         if (-not $script:Config.Initialized) {
-            Set-ContextVault
+            if ($VaultName) {
+                Set-ContextVault -VaultName $VaultName
+            } else {
+                Set-ContextVault
+            }
+        } elseif ($VaultName -and $VaultName -ne $script:Config.CurrentVault) {
+            # Switch to specified vault
+            Set-ContextVault -VaultName $VaultName
         }
     }
 

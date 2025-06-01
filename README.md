@@ -9,6 +9,32 @@ The module uses NaCl-based encryption, provided by the `libsodium` library, to e
 functionality is called [`Sodium`](https://github.com/PSModule/Sodium) and is a dependency of this module. The
 [`Sodium`](https://github.com/PSModule/Sodium) module is automatically installed when you install this module.
 
+## Multi-Vault Support
+
+The Context module supports **multiple named vaults**, allowing you to organize and isolate your contexts by purpose, environment, or security requirements. Each vault has its own encryption keys and storage directory, providing enhanced security and organization.
+
+Key features:
+- **Multiple vaults**: Create separate vaults for work, personal, or different projects
+- **Per-vault encryption**: Each vault uses unique encryption keys for security isolation
+- **Default vault**: Set a default vault for operations when no specific vault is specified
+- **Backward compatibility**: Existing single-vault setups are automatically migrated
+
+For detailed information about multi-vault functionality, see [Multi-Vault Documentation](docs/MultiVault.md).
+
+Example:
+```powershell
+# Create separate vaults for different purposes
+New-ContextVault -Name "Work"
+New-ContextVault -Name "Personal"
+
+# Store contexts in specific vaults
+Set-Context -ID "GitHubWork" -Context @{ Token = "work_token" } -VaultName "Work"
+Set-Context -ID "GitHubPersonal" -Context @{ Token = "personal_token" } -VaultName "Personal"
+
+# Set default vault
+Set-CurrentVault -Name "Work"
+```
+
 ## What is a `Context`?
 
 A `Context` is a way to securely persist user and module state on disk while ensuring data remains encrypted at rest. It stores structured data that

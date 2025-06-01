@@ -23,6 +23,18 @@ function Set-Context {
         Creates a context called 'MySecret' in the vault.
 
         .EXAMPLE
+        Set-Context -ID 'PSModule.GitHub' -Context @{ Name = 'MySecret' } -VaultName "WorkVault"
+
+        Output:
+        ```powershell
+        ID      : PSModule.GitHub
+        Path    : C:\Vault\WorkVault\Guid.json
+        Context : @{ Name = 'MySecret' }
+        ```
+
+        Creates a context called 'MySecret' in the specified "WorkVault".
+
+        .EXAMPLE
         Set-Context -ID 'PSModule.GitHub' -Context @{ Name = 'MySecret'; AccessToken = '123123123' }
 
         Output:
@@ -61,6 +73,10 @@ function Set-Context {
         [Parameter(ValueFromPipeline)]
         [object] $Context = @{},
 
+        # The name of the vault to store the context in.
+        [Parameter()]
+        [string] $VaultName,
+
         # Pass the context through the pipeline.
         [Parameter()]
         [switch] $PassThru
@@ -71,7 +87,14 @@ function Set-Context {
         Write-Debug "[$stackPath] - Start"
 
         if (-not $script:Config.Initialized) {
-            Set-ContextVault
+            if ($VaultName) {
+                Set-ContextVault -VaultName $VaultName
+            } else {
+                Set-ContextVault
+            }
+        } elseif ($VaultName -and $VaultName -ne $script:Config.CurrentVault) {
+            # Switch to specified vault
+            Set-ContextVault -VaultName $VaultName
         }
     }
 
