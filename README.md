@@ -22,55 +22,61 @@ prefix before encryption, ensuring they can be safely restored as secure strings
 When imported, the encrypted data is decrypted, converted back into its original structured format, and held in memory, ensuring both usability and
 security.
 
-1. Storing data (object or dictionary) in persistent storage using `Set-Context`
-   Typically, the first input to a `Context` is an object (though it can also be a hashtable or any other type that converts to JSON).
-   <details>
-   <summary>Example</summary>
+#### 1. Storing data (object or dictionary) in persistent storage using `Set-Context`
 
-   ```pwsh
-   Set-Context -ID 'john_doe' -Context ([PSCustomObject]@{
-       Username          = 'john_doe'
-       AuthToken         = 'ghp_12345ABCDE67890FGHIJ' | ConvertTo-SecureString -AsPlainText -Force # gitleaks:allow
-       LoginTime         = Get-Date
-       IsTwoFactorAuth   = $true
-       TwoFactorMethods  = @('TOTP', 'SMS')
-   })
-   ```
+Typically, the first input to a `Context` is an object (though it can also be a hashtable or any other type that converts to JSON).
 
-   </details>
+<details>
+<summary>Example</summary>
 
-2. The context after preparing it for saving to file.
-   This is how the context object above is prepared before being encrypted and stored on disk. Notice that the `ID` property gets added.
-   <details>
-   <summary>Example</summary>
+```pwsh
+Set-Context -ID 'john_doe' -Context ([PSCustomObject]@{
+    Username          = 'john_doe'
+    AuthToken         = 'ghp_12345ABCDE67890FGHIJ' | ConvertTo-SecureString -AsPlainText -Force # gitleaks:allow
+    LoginTime         = Get-Date
+    IsTwoFactorAuth   = $true
+    TwoFactorMethods  = @('TOTP', 'SMS')
+})
+```
 
-   ```json
-   {
-       "ID": "john_doe",
-       "Username": "john_doe",
-       "AuthToken": "[SECURESTRING]ghp_12345ABCDE67890FGHIJ",
-       "LoginTime": "2024-11-21T21:16:56.2518249+01:00",
-       "IsTwoFactorAuth": true,
-       "TwoFactorMethods": ["TOTP", "SMS"]
-   }
-   ```
+</details>
 
-   </details>
+#### 2. The context after preparing it for saving to file.
 
-3. How the data is ultimately stored – as processed JSON
-   This is how the context object above is stored after being encrypted.
-   <details>
-   <summary>Example</summary>
+This is how the context object above is prepared before being encrypted and stored on disk. Notice that the `ID` property gets added.
 
-   ```json
-   {
-       "ID": "PSModule.GitHub/github.com/john_doe",
-       "Path": "C:\\Users\\JohnDoe\\.contextvault\\d2edaa6e-95a1-41a0-b6ef-0ecc5d116030.json",
-       "Context": "0kGmtbQiEtih7 --< encrypted context data >-- ceqbMiBilUvEzO1Lk"
-   }
-   ```
+<details>
+<summary>Example</summary>
 
-   </details>
+```json
+{
+    "ID": "john_doe",
+    "Username": "john_doe",
+    "AuthToken": "[SECURESTRING]ghp_12345ABCDE67890FGHIJ",
+    "LoginTime": "2024-11-21T21:16:56.2518249+01:00",
+    "IsTwoFactorAuth": true,
+    "TwoFactorMethods": ["TOTP", "SMS"]
+}
+```
+
+</details>
+
+#### 3. How the data is ultimately stored – as processed JSON
+
+This is how the context object above is stored after being encrypted.
+
+<details>
+<summary>Example</summary>
+
+```json
+{
+    "ID": "PSModule.GitHub/github.com/john_doe",
+    "Path": "C:\\Users\\JohnDoe\\.contextvault\\d2edaa6e-95a1-41a0-b6ef-0ecc5d116030.json",
+    "Context": "0kGmtbQiEtih7 --< encrypted context data >-- ceqbMiBilUvEzO1Lk"
+}
+```
+
+</details>
 
 ## Installation
 
