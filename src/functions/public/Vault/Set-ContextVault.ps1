@@ -12,10 +12,6 @@ function Set-ContextVault {
         a user-specific shard, and a seed shard stored within the vault directory.
         Supports both legacy single vault and new multi-vault configurations.
 
-        .PARAMETER VaultName
-        Optional name of the vault to set. If not specified, uses the default vault.
-        For backward compatibility, if no vaults are configured, initializes legacy vault.
-
         .EXAMPLE
         Set-ContextVault
 
@@ -76,32 +72,32 @@ function Set-ContextVault {
                 Write-Verbose "Legacy vault detected, migrating to multi-vault structure"
                 $targetVaultName = "default"
                 $targetVaultPath = $script:Config.VaultPath
-                
+
                 # Migrate legacy vault to multi-vault structure
                 if (-not (Test-Path $script:Config.VaultsPath)) {
                     $null = New-Item -Path $script:Config.VaultsPath -ItemType Directory -Force
                 }
-                
+
                 $defaultVaultPath = Join-Path -Path $script:Config.VaultsPath -ChildPath "default"
                 if (-not (Test-Path $defaultVaultPath)) {
                     Write-Verbose "Moving legacy vault to multi-vault structure"
                     Move-Item -Path $script:Config.VaultPath -Destination $defaultVaultPath
                 }
-                
+
                 # Update configuration
                 $vaultInfo = [PSCustomObject]@{
                     Name = "default"
                     Path = $defaultVaultPath
                     Created = Get-Date
                 }
-                
+
                 if (-not $vaultConfig.Vaults) {
                     $vaultConfig.Vaults = [PSCustomObject]@{}
                 }
                 $vaultConfig.Vaults | Add-Member -MemberType NoteProperty -Name "default" -Value $vaultInfo
                 $vaultConfig.DefaultVault = "default"
                 Set-VaultConfig -VaultConfig $vaultConfig
-                
+
                 $targetVaultPath = $defaultVaultPath
             } else {
                 # No vaults exist, create default vault
@@ -126,7 +122,7 @@ function Set-ContextVault {
             }
 
             Write-Verbose 'Checking for existing seed shard'
-            $seedShardPath = Join-Path -Path $targetVaultPath -ChildPath $script:Config.SeedShardPath
+            $seedShardPath = Join-Path -Path $targetVaultPath -ChildPath $script:Config.SeedShardFileName
             $seedShardExists = Test-Path $seedShardPath
             Write-Verbose "Seed shard exists: $seedShardExists"
 

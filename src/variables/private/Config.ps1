@@ -1,11 +1,18 @@
 ﻿$script:Config = [pscustomobject]@{
-    Initialized     = $false                                             # Has the vault been initialized?
-    VaultsPath      = Join-Path -Path $HOME -ChildPath '.contextvaults' # Parent directory for all vaults
-    VaultPath       = Join-Path -Path $HOME -ChildPath '.contextvault'  # Legacy single vault path (for backward compatibility)
-    CurrentVault    = $null                                             # Name of the current/default vault
-    SeedShardPath   = 'vault.shard'                                    # Seed shard path (relative to VaultPath)
-    VaultConfigFile = 'vaults.json'                                    # Vault configuration file name
-    PrivateKey      = $null                                             # Private key (populated on init)
-    PublicKey       = $null                                             # Public key (populated on init)
-    Vaults          = @{}                                              # Dictionary of vault configurations
+    ConfigFolderPath = Join-Path -Path $HOME -ChildPath '.contextvaults'        # Parent directory for all vaults
+    VaultsFolderPath = Join-Path -Path $HOME -ChildPath '.contextvaults/vaults' # Directory where vaults are stored
+    Valuts = @{}
+}
+
+
+$vaults = @{
+    'default' = [pscustomobject]@{
+        Name        = 'default'
+        Description = 'Default vault for Context'
+        Path        = Join-Path -Path $script:Config.ConfigFolderPath -ChildPath 'default'
+        Shard       = $script:Config.SeedShardFileName
+        PrivateKey = $null                                             # Private key (populated on init)
+        PublicKey = $null                                             # Public key (populated on init)
+        SeedShardFileName = 'vault.shard'                                     # Seed shard path (relative to VaultPath)
+    }
 }
