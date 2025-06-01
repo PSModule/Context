@@ -1,4 +1,4 @@
-﻿#Requires -Modules @{ ModuleName = 'Sodium'; RequiredVersion = '2.1.2' }
+﻿#Requires -Modules @{ ModuleName = 'Sodium'; RequiredVersion = '2.2.0' }
 
 function Set-ContextVault {
     <#
@@ -59,7 +59,7 @@ function Set-ContextVault {
             $machineShard = [System.Environment]::MachineName
             $userShard = [System.Environment]::UserName
             #$userInputShard = Read-Host -Prompt 'Enter a seed shard' # Eventually 4 shards. +1 for user input.
-            $seed = $machineShard + $userShard + $seedShard + $userInputShard
+            $seed = $machineShard + $userShard + $seedShard # + $userInputShard
             $keys = New-SodiumKeyPair -Seed $seed
             $script:Config.PrivateKey = $keys.PrivateKey
             $script:Config.PublicKey = $keys.PublicKey
@@ -73,6 +73,5 @@ function Set-ContextVault {
 
     end {
         Write-Debug "[$stackPath] - End"
-        # Note: No longer importing all contexts into memory for better cross-process sharing
     }
 }

@@ -1,4 +1,4 @@
-﻿#Requires -Modules @{ ModuleName = 'Sodium'; RequiredVersion = '2.1.2' }
+﻿#Requires -Modules @{ ModuleName = 'Sodium'; RequiredVersion = '2.2.0' }
 
 function Set-Context {
     <#
@@ -101,7 +101,7 @@ function Set-Context {
                 Write-Warning "Failed to read context file: $($file.FullName). Error: $_"
             }
         }
-        
+
         if (-not $existingContextFile) {
             Write-Verbose "Context [$ID] not found in vault"
             $Guid = [Guid]::NewGuid().ToString()
