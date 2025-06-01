@@ -6,8 +6,8 @@ separate user and module data from the module code, enabling users to resume the
 provided the service supports session refresh mechanisms (e.g., refresh tokens).
 
 The module uses NaCl-based encryption, provided by the `libsodium` library, to encrypt and decrypt `Context` data. The module that delivers this
-functionality is called [`Sodium`](https://github.com/someuser/Sodium) and is a dependency of this module. The
-[`Sodium`](https://github.com/someuser/Sodium) module is automatically installed when you install this module.
+functionality is called [`Sodium`](https://github.com/PSModule/Sodium) and is a dependency of this module. The
+[`Sodium`](https://github.com/PSModule/Sodium) module is automatically installed when you install this module.
 
 ## What is a `Context`?
 
@@ -38,6 +38,7 @@ Set-Context -ID 'john_doe' -Context ([PSCustomObject]@{
     TwoFactorMethods  = @('TOTP', 'SMS')
 })
 ```
+
 </details>
 
 <details>
@@ -55,6 +56,7 @@ This is how the context object above is prepared before being encrypted and stor
     "LoginTime": "2024-11-21T21:16:56.2518249+01:00"
 }
 ```
+
 </details>
 
 <details>
@@ -71,6 +73,7 @@ This is how the context object above is stored after being encrypted.
   "Context": "0kGmtbQiEtih7 --< encrypted context data >-- ceqbMiBilUvEzO1Lk"
 }
 ```
+
 </details>
 
 ## Installation
