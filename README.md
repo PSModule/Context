@@ -39,9 +39,9 @@ Set-Context -ID 'john_doe' -Context ([PSCustomObject]@{
 </details>
 
 <details>
-<summary> 2. How the data is ultimately stored – as processed JSON </summary>
+<summary> 2. The context after preparing it for saving to file. </summary>
 
-This is how the object above is stored, shown here in an uncompressed format for readability. Notice that the `ID` property gets added.
+This is how the context object above is prepared before being encrypted and stored on disk. Notice that the `ID` property gets added.
 
 ```json
 {
@@ -49,6 +49,20 @@ This is how the object above is stored, shown here in an uncompressed format for
     "Username": "john_doe",
     "AuthToken": "[SECURESTRING]ghp_12345ABCDE67890FGHIJ",
     "LoginTime": "2024-11-21T21:16:56.2518249+01:00"
+}
+```
+</details>
+
+<details>
+<summary> 3. How the data is ultimately stored – as processed JSON </summary>
+
+This is how the context object above is stored after being encrypted.
+
+```json
+{
+  "ID": "PSModule.GitHub/github.com/octocat",
+  "Path": "C:\\Users\\MyUser\\.contextvault\\d2edaa6e-95a1-41a0-b6ef-0ecc5d116030.json",
+  "Context": "0kGmtbQiEtih7 --< encrypted context data >-- ceqbMiBilUvEzO1Lk"
 }
 ```
 </details>
