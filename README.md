@@ -6,8 +6,8 @@ separate user and module data from the module code, enabling users to resume the
 provided the service supports session refresh mechanisms (e.g., refresh tokens).
 
 The module uses NaCl-based encryption, provided by the `libsodium` library, to encrypt and decrypt `Context` data. The module that delivers this
-functionality is called [`Sodium`](https://github.com/someuser/Sodium) and is a dependency of this module. The
-[`Sodium`](https://github.com/someuser/Sodium) module is automatically installed when you install this module.
+functionality is called [`Sodium`](https://github.com/PSModule/Sodium) and is a dependency of this module. The
+[`Sodium`](https://github.com/PSModule/Sodium) module is automatically installed when you install this module.
 
 ## Multi-Vault Support
 
@@ -48,10 +48,12 @@ prefix before encryption, ensuring they can be safely restored as secure strings
 When imported, the encrypted data is decrypted, converted back into its original structured format, and held in memory, ensuring both usability and
 security.
 
-<details>
-<summary> 1. Storing data (object or dictionary) in persistent storage using `Set-Context` </summary>
+### 1. Storing data (object or dictionary) in persistent storage using `Set-Context`
 
 Typically, the first input to a `Context` is an object (though it can also be a hashtable or any other type that converts to JSON).
+
+<details>
+<summary>Example</summary>
 
 ```pwsh
 Set-Context -ID 'john_doe' -Context ([PSCustomObject]@{
@@ -62,21 +64,44 @@ Set-Context -ID 'john_doe' -Context ([PSCustomObject]@{
     TwoFactorMethods  = @('TOTP', 'SMS')
 })
 ```
+
 </details>
 
-<details>
-<summary> 2. How the data is ultimately stored – as processed JSON </summary>
+### 2. The context after preparing it for saving to file.
 
-This is how the object above is stored, shown here in an uncompressed format for readability. Notice that the `ID` property gets added.
+This is how the context object above is prepared before being encrypted and stored on disk. Notice that the `ID` property gets added.
+
+<details>
+<summary>Example</summary>
 
 ```json
 {
     "ID": "john_doe",
     "Username": "john_doe",
     "AuthToken": "[SECURESTRING]ghp_12345ABCDE67890FGHIJ",
-    "LoginTime": "2024-11-21T21:16:56.2518249+01:00"
+    "LoginTime": "2024-11-21T21:16:56.2518249+01:00",
+    "IsTwoFactorAuth": true,
+    "TwoFactorMethods": ["TOTP", "SMS"]
 }
 ```
+
+</details>
+
+### 3. How the data is ultimately stored – as processed JSON
+
+This is how the context object above is stored after being encrypted.
+
+<details>
+<summary>Example</summary>
+
+```json
+{
+    "ID": "PSModule.GitHub/github.com/john_doe",
+    "Path": "C:\\Users\\JohnDoe\\.contextvault\\d2edaa6e-95a1-41a0-b6ef-0ecc5d116030.json",
+    "Context": "0kGmtbQiEtih7 --< encrypted context data >-- ceqbMiBilUvEzO1Lk"
+}
+```
+
 </details>
 
 ## Installation
@@ -143,15 +168,15 @@ developers to define a structured `Context` while providing users with familiar 
 
 ```pwsh
 Connect-GitHub ...
-Set-Context -ID 'GitHub.BobMarley'
+Set-Context -ID 'GitHub/BobMarley'
 ```
 
 3. Modify user configuration:
 
 ```pwsh
-$context = Get-Context -ID 'GitHub.BobMarley'
+$context = Get-Context -ID 'GitHub/BobMarley'
 # Modify settings
-Set-Context -ID 'GitHub.BobMarley' -Context $context
+Set-Context -ID 'GitHub/BobMarley' -Context $context
 ```
 
 4. Retrieve user configuration:
@@ -173,4 +198,4 @@ If you code, we'd love your contributions! Please read the [Contribution Guideli
 
 ## Links
 
-- Sodium [GitHub](https://github.com/someuser/Sodium) | [PSGallery](https://www.powershellgallery.com/packages/Sodium)
+- Sodium [GitHub](https://github.com/PSModule/Sodium) | [PSGallery](https://www.powershellgallery.com/packages/Sodium)
