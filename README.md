@@ -53,7 +53,9 @@ This is how the context object above is prepared before being encrypted and stor
     "ID": "john_doe",
     "Username": "john_doe",
     "AuthToken": "[SECURESTRING]ghp_12345ABCDE67890FGHIJ",
-    "LoginTime": "2024-11-21T21:16:56.2518249+01:00"
+    "LoginTime": "2024-11-21T21:16:56.2518249+01:00",
+    "IsTwoFactorAuth": true,
+    "TwoFactorMethods": ["TOTP", "SMS"]
 }
 ```
 
@@ -68,8 +70,8 @@ This is how the context object above is stored after being encrypted.
 
 ```json
 {
-  "ID": "PSModule.GitHub/github.com/octocat",
-  "Path": "C:\\Users\\MyUser\\.contextvault\\d2edaa6e-95a1-41a0-b6ef-0ecc5d116030.json",
+  "ID": "PSModule.GitHub/github.com/john_doe",
+  "Path": "C:\\Users\\JohnDoe\\.contextvault\\d2edaa6e-95a1-41a0-b6ef-0ecc5d116030.json",
   "Context": "0kGmtbQiEtih7 --< encrypted context data >-- ceqbMiBilUvEzO1Lk"
 }
 ```
@@ -140,15 +142,15 @@ developers to define a structured `Context` while providing users with familiar 
 
 ```pwsh
 Connect-GitHub ...
-Set-Context -ID 'GitHub.BobMarley'
+Set-Context -ID 'GitHub/BobMarley'
 ```
 
 3. Modify user configuration:
 
 ```pwsh
-$context = Get-Context -ID 'GitHub.BobMarley'
+$context = Get-Context -ID 'GitHub/BobMarley'
 # Modify settings
-Set-Context -ID 'GitHub.BobMarley' -Context $context
+Set-Context -ID 'GitHub/BobMarley' -Context $context
 ```
 
 4. Retrieve user configuration:
@@ -170,4 +172,4 @@ If you code, we'd love your contributions! Please read the [Contribution Guideli
 
 ## Links
 
-- Sodium [GitHub](https://github.com/someuser/Sodium) | [PSGallery](https://www.powershellgallery.com/packages/Sodium)
+- Sodium [GitHub](https://github.com/PSModule/Sodium) | [PSGallery](https://www.powershellgallery.com/packages/Sodium)
