@@ -1,5 +1,6 @@
 # Context
 
+
 Modules typically handle two types of data that benefit from persistent secure storage and management: module settings and user settings and secrets.
 This module introduces the concept of `Contexts`, which store data locally on the machine where the module runs. It allows module developers to
 separate user and module data from the module code, enabling users to resume their work without needing to reconfigure the module or log in again,
