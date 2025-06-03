@@ -1,9 +1,9 @@
-﻿Register-ArgumentCompleter -CommandName 'Get-Context', 'Set-Context', 'Remove-Context', 'Rename-Context' -ParameterName 'ID' -ScriptBlock {
+﻿Register-ArgumentCompleter -CommandName ($script:PSModuleInfo.FunctionsToExport) -ParameterName 'ID' -ScriptBlock {
     param($commandName, $parameterName, $wordToComplete, $commandAst, $fakeBoundParameter)
     $null = $commandName, $parameterName, $wordToComplete, $commandAst, $fakeBoundParameter
 
-    $script:Contexts.Values.ID | Where-Object { $_ -like "$wordToComplete*" } |
-        ForEach-Object {
-            [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_)
-        }
+    $contextInfos = Get-ContextInfo -ErrorAction SilentlyContinue -Verbose:$false -Debug:$false
+    $contextInfos | Where-Object { $_.ID -like "$wordToComplete*" } | ForEach-Object {
+        [System.Management.Automation.CompletionResult]::new($_.ID, $_.ID, 'ParameterValue', $_.ID)
+    }
 }

@@ -1,10 +1,12 @@
-﻿function Get-Context {
+﻿#Requires -Modules @{ ModuleName = 'Sodium'; RequiredVersion = '2.2.0' }
+
+function Get-Context {
     <#
         .SYNOPSIS
-        Retrieves a context from the in-memory context vault.
+        Retrieves a context from the context vault.
 
         .DESCRIPTION
-        Retrieves a context from the loaded contexts stored in memory.
+        Retrieves a context by reading and decrypting context files directly from the vault directory.
         If no ID is specified, all available contexts will be returned.
         Wildcards are supported to match multiple contexts.
 
@@ -42,7 +44,7 @@
         LoginTime         : 2/9/2025 10:45:11 AM
         ```
 
-        Retrieves all contexts from the context vault (in memory).
+        Retrieves all contexts from the context vault (directly from disk).
 
         .EXAMPLE
         Get-Context -ID 'MySecret'
@@ -68,7 +70,7 @@
         YourData  : {DataKey=DataValue}
         ```
 
-        Retrieves all contexts that start with 'My' from the context vault (in memory).
+        Retrieves all contexts that start with 'My' from the context vault (directly from disk).
 
         .OUTPUTS
         [System.Object]
@@ -106,7 +108,25 @@
         Write-Verbose "Retrieving contexts - ID: [$($ID -join ', ')]"
         foreach ($item in $ID) {
             Write-Verbose "Retrieving contexts - ID: [$item]"
-            $script:Contexts.Values | Where-Object { $_.ID -like $item } | Select-Object -ExpandProperty Context
+            # Read context files directly from disk instead of using in-memory cache
+            $contextFiles = Get-ChildItem -Path $script:Config.VaultPath -Filter *.json -File -Recurse
+            foreach ($file in $contextFiles) {
+                try {
+                    $contextInfo = Get-Content -Path $file.FullName | ConvertFrom-Json
+                    if ($contextInfo.ID -like $item) {
+                        # Decrypt and return the context
+                        $params = @{
+                            SealedBox  = $contextInfo.Context
+                            PublicKey  = $script:Config.PublicKey
+                            PrivateKey = $script:Config.PrivateKey
+                        }
+                        $contextObj = ConvertFrom-SodiumSealedBox @params
+                        ConvertFrom-ContextJson -JsonString $contextObj
+                    }
+                } catch {
+                    Write-Warning "Failed to read or decrypt context file: $($file.FullName). Error: $_"
+                }
+            }
         }
     }
 
