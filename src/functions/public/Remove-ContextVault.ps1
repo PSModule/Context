@@ -59,10 +59,6 @@
             $contextCount = $vaultInfo.ContextCount
 
             $confirmMessage = "Remove vault '$Name' and all its $contextCount context(s)"
-            
-            if ($Force) {
-                $PSCmdlet.ConfirmImpact = 'None'
-            }
 
             if ($PSCmdlet.ShouldProcess($Name, $confirmMessage)) {
                 Write-Verbose "Removing context vault [$Name] and all its contents"

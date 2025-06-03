@@ -1,6 +1,4 @@
-﻿#Requires -Modules @{ ModuleName = 'Sodium'; RequiredVersion = '2.2.0' }
-
-function Move-Context {
+﻿function Move-Context {
     <#
         .SYNOPSIS
         Moves a context from one vault to another.

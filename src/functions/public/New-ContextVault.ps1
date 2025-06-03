@@ -1,6 +1,4 @@
-﻿#Requires -Modules @{ ModuleName = 'Sodium'; RequiredVersion = '2.2.0' }
-
-function New-ContextVault {
+﻿function New-ContextVault {
     <#
         .SYNOPSIS
         Creates a new context vault.

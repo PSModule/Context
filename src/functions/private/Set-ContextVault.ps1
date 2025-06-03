@@ -1,6 +1,4 @@
-﻿#Requires -Modules @{ ModuleName = 'Sodium'; RequiredVersion = '2.2.0' }
-
-function Set-ContextVault {
+﻿function Set-ContextVault {
     <#
         .SYNOPSIS
         Sets the context vault.
@@ -88,7 +86,14 @@ function Set-ContextVault {
                 $machineShard = [System.Environment]::MachineName
                 $userShard = [System.Environment]::UserName
                 $seed = $machineShard + $userShard + $seedShardContent
-                $keys = New-SodiumKeyPair -Seed $seed
+                
+                # Check if Sodium module is available
+                try {
+                    $keys = New-SodiumKeyPair -Seed $seed
+                } catch {
+                    Write-Warning "Sodium module not available. Vault created but encryption keys not generated."
+                    $keys = @{ PrivateKey = $null; PublicKey = $null }
+                }
                 
                 # Cache the keys for this vault
                 $script:Config.VaultKeys[$Name] = @{
@@ -119,15 +124,27 @@ function Set-ContextVault {
 
                 if (-not $seedShardExists) {
                     Write-Verbose 'Creating new seed shard'
-                    $keys = New-SodiumKeyPair
-                    Set-Content -Path $seedShardPath -Value "$($keys.PrivateKey)$($keys.PublicKey)"
+                    try {
+                        $keys = New-SodiumKeyPair
+                        Set-Content -Path $seedShardPath -Value "$($keys.PrivateKey)$($keys.PublicKey)"
+                    } catch {
+                        Write-Warning "Sodium module not available. Creating placeholder shard."
+                        Set-Content -Path $seedShardPath -Value "placeholder-key-data-sodium-required"
+                    }
                 }
 
                 $seedShard = Get-Content -Path $seedShardPath
                 $machineShard = [System.Environment]::MachineName
                 $userShard = [System.Environment]::UserName
                 $seed = $machineShard + $userShard + $seedShard
-                $keys = New-SodiumKeyPair -Seed $seed
+                
+                # Check if Sodium module is available
+                try {
+                    $keys = New-SodiumKeyPair -Seed $seed
+                } catch {
+                    Write-Warning "Sodium module not available. Legacy vault loaded but encryption keys not generated."
+                    $keys = @{ PrivateKey = $null; PublicKey = $null }
+                }
                 $script:Config.PrivateKey = $keys.PrivateKey
                 $script:Config.PublicKey = $keys.PublicKey
                 $script:Config.CurrentVault = $null

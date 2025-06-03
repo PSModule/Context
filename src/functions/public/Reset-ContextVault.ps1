@@ -1,6 +1,4 @@
-﻿#Requires -Modules @{ ModuleName = 'Sodium'; RequiredVersion = '2.2.0' }
-
-function Reset-ContextVault {
+﻿function Reset-ContextVault {
     <#
         .SYNOPSIS
         Resets a context vault.
@@ -65,10 +63,6 @@ function Reset-ContextVault {
             $contextCount = $vaultInfo.ContextCount
 
             $confirmMessage = "Reset vault '$Name' and delete all its $contextCount context(s)"
-            
-            if ($Force) {
-                $PSCmdlet.ConfirmImpact = 'None'
-            }
 
             if ($PSCmdlet.ShouldProcess($Name, $confirmMessage)) {
                 Write-Verbose "Resetting context vault [$Name]"

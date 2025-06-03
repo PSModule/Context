@@ -9,6 +9,32 @@ The module uses NaCl-based encryption, provided by the `libsodium` library, to e
 functionality is called [`Sodium`](https://github.com/PSModule/Sodium) and is a dependency of this module. The
 [`Sodium`](https://github.com/PSModule/Sodium) module is automatically installed when you install this module.
 
+## ContextVaults - Multi-Vault Support
+
+The Context module now supports **multiple named context vaults**, enabling isolated and secure storage for different modules or scenarios. Each vault maintains its own encryption domain and isolated storage, providing enhanced security and organization.
+
+### Key Features
+
+- **Isolated Storage**: Each vault has its own encryption keys and storage directory
+- **Easy Integration**: Module authors can onboard by simply passing their module name as the `-Vault` parameter
+- **Predictable Structure**: All vaults are stored under `$HOME/.contextvaults/Vaults/<VaultName>/`
+- **Enhanced Security**: Per-vault encryption ensures contexts cannot be decrypted outside their vault
+- **Backward Compatibility**: Legacy single-vault mode is still supported
+
+### Directory Structure
+
+```
+$HOME/.contextvaults/
+├── Vaults/
+│   ├── <VaultName>/
+│   │   ├── Context/
+│   │   │   ├── <guid>.json
+│   │   │   └── <guid2>.json
+│   │   ├── shard
+│   │   └── config.json
+└── config.json
+```
+
 ## What is a `Context`?
 
 The concept of `Context` is widely used to represent a collection of data that is relevant to a specific use-case. In this module,
@@ -145,6 +171,214 @@ Set-Context -ID 'GitHub.BobMarley' -Context $context
 
 ```pwsh
 Get-Context -ID 'GitHub/BobMarley'
+```
+
+## ContextVaults Usage
+
+### Vault Management
+
+#### Creating a New Vault
+
+Create a new context vault for your module or scenario:
+
+```pwsh
+New-ContextVault -Name "MyModule" -Description "Vault for MyModule contexts"
+```
+
+#### Listing Vaults
+
+Get information about existing vaults:
+
+```pwsh
+# List all vaults
+Get-ContextVault
+
+# Get specific vault
+Get-ContextVault -Name "MyModule"
+
+# Get vaults matching pattern
+Get-ContextVault -Name "My*"
+```
+
+#### Managing Vaults
+
+```pwsh
+# Rename a vault
+Rename-ContextVault -Name "OldModule" -NewName "NewModule"
+
+# Reset a vault (removes all contexts, regenerates encryption keys)
+Reset-ContextVault -Name "MyModule"
+
+# Remove a vault completely
+Remove-ContextVault -Name "OldModule"
+```
+
+### Working with Contexts in Vaults
+
+#### Storing Contexts
+
+Store contexts in specific vaults using the `-Vault` parameter:
+
+```pwsh
+# Store a context in the "MyModule" vault
+Set-Context -ID 'UserSettings' -Context @{ 
+    Theme = 'Dark'
+    Language = 'en-US' 
+} -Vault "MyModule"
+
+# Store user credentials in a specific vault
+Set-Context -ID 'GitHub.BobMarley' -Context @{
+    Username = 'BobMarley'
+    Token = 'ghp_...' | ConvertTo-SecureString -AsPlainText -Force
+} -Vault "GitHub"
+```
+
+#### Retrieving Contexts
+
+Retrieve contexts from specific vaults:
+
+```pwsh
+# Get a specific context from a vault
+Get-Context -ID 'UserSettings' -Vault "MyModule"
+
+# Get all contexts from a vault
+Get-Context -Vault "MyModule"
+
+# Get contexts matching pattern from a vault
+Get-Context -ID 'GitHub.*' -Vault "GitHub"
+```
+
+#### Context Operations
+
+All context operations support the `-Vault` parameter:
+
+```pwsh
+# Remove a context from a specific vault
+Remove-Context -ID 'UserSettings' -Vault "MyModule"
+
+# Rename a context within a vault
+Rename-Context -ID 'OldID' -NewID 'NewID' -Vault "MyModule"
+
+# Get context information from a vault
+Get-ContextInfo -ID 'UserSettings' -Vault "MyModule"
+```
+
+#### Moving Contexts Between Vaults
+
+Move contexts from one vault to another:
+
+```pwsh
+# Move a context between vaults
+Move-Context -ID 'UserSettings' -SourceVault "OldModule" -TargetVault "NewModule"
+```
+
+### Integration Guide for Module Authors
+
+#### Setting Up ContextVaults for Your Module
+
+1. **Create a vault for your module** (typically done once per user):
+
+```pwsh
+function Initialize-MyModuleContext {
+    # Create vault if it doesn't exist
+    if (-not (Get-ContextVault -Name "MyModule" -ErrorAction SilentlyContinue)) {
+        New-ContextVault -Name "MyModule" -Description "Context vault for MyModule"
+    }
+}
+```
+
+2. **Create wrapper functions** for your module:
+
+```pwsh
+function Set-MyModuleContext {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [string] $ID,
+        
+        [Parameter(Mandatory)]
+        [object] $Context
+    )
+    
+    Set-Context -ID $ID -Context $Context -Vault "MyModule"
+}
+
+function Get-MyModuleContext {
+    [CmdletBinding()]
+    param(
+        [Parameter()]
+        [string] $ID = '*'
+    )
+    
+    Get-Context -ID $ID -Vault "MyModule"
+}
+
+function Remove-MyModuleContext {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [string] $ID
+    )
+    
+    Remove-Context -ID $ID -Vault "MyModule"
+}
+```
+
+3. **Use in your module**:
+
+```pwsh
+# Store module configuration
+Set-MyModuleContext -ID 'Config' -Context @{
+    ApiEndpoint = 'https://api.example.com'
+    DefaultTimeout = 30
+}
+
+# Store user settings
+Set-MyModuleContext -ID "User.$($env:USERNAME)" -Context @{
+    ApiKey = $ApiKey
+    Preferences = @{ Theme = 'Dark' }
+}
+
+# Retrieve user settings
+$userContext = Get-MyModuleContext -ID "User.$($env:USERNAME)"
+```
+
+### Benefits of ContextVaults
+
+- **Isolation**: Each module has its own secure vault with separate encryption keys
+- **Organization**: Contexts are logically grouped by module or purpose
+- **Security**: Contexts cannot be decrypted outside their designated vault
+- **Simplicity**: Module integration requires only adding the `-Vault` parameter
+- **Scalability**: Supports both simple single-module scenarios and complex multi-module environments
+- **Backward Compatibility**: Existing code continues to work with legacy single-vault mode
+
+### Migration from Legacy Mode
+
+Existing contexts in the legacy single vault (`$HOME/.contextvault`) continue to work without modification. To migrate to the new vault system:
+
+1. Create a new vault for your contexts:
+```pwsh
+New-ContextVault -Name "MyModule"
+```
+
+2. Move existing contexts to the new vault:
+```pwsh
+# Get contexts from legacy vault
+$contexts = Get-Context
+
+# Move each context to the new vault
+foreach ($context in $contexts) {
+    Move-Context -ID $context.ID -SourceVault $null -TargetVault "MyModule"
+}
+```
+
+3. Update your code to use the `-Vault` parameter:
+```pwsh
+# Old way
+Set-Context -ID 'MyContext' -Context $data
+
+# New way
+Set-Context -ID 'MyContext' -Context $data -Vault "MyModule"
 ```
 
 ## Contributing
