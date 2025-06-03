@@ -11,7 +11,7 @@ functionality is called [`Sodium`](https://github.com/PSModule/Sodium) and is a 
 
 ## ContextVaults - Multi-Vault Support
 
-The Context module now supports **multiple named context vaults**, enabling isolated and secure storage for different modules or scenarios. Each vault maintains its own encryption domain and isolated storage, providing enhanced security and organization.
+The Context module supports **multiple named context vaults**, enabling isolated and secure storage for different modules or scenarios. Each vault maintains its own encryption domain and isolated storage, providing enhanced security and organization.
 
 ### Key Features
 
@@ -19,7 +19,7 @@ The Context module now supports **multiple named context vaults**, enabling isol
 - **Easy Integration**: Module authors can onboard by simply passing their module name as the `-Vault` parameter
 - **Predictable Structure**: All vaults are stored under `$HOME/.contextvaults/Vaults/<VaultName>/`
 - **Enhanced Security**: Per-vault encryption ensures contexts cannot be decrypted outside their vault
-- **Backward Compatibility**: Legacy single-vault mode is still supported
+- **Backward Compatibility**: Legacy single-vault mode is supported
 
 ### Directory Structure
 
@@ -177,9 +177,21 @@ Get-Context -ID 'GitHub/BobMarley'
 
 ### Vault Management
 
-#### Creating a New Vault
+#### Creating or Configuring a Vault
 
-Create a new context vault for your module or scenario:
+Create a new context vault or update the configuration of an existing one:
+
+```pwsh
+# Create new vault or update existing vault configuration
+Set-ContextVault -Name "MyModule" -Description "Vault for MyModule contexts"
+
+# Update description of existing vault
+Set-ContextVault -Name "GitHub" -Description "Updated vault description"
+```
+
+#### Creating a New Vault (Explicit Creation)
+
+Create a new context vault with explicit creation that fails if vault already exists:
 
 ```pwsh
 New-ContextVault -Name "MyModule" -Description "Vault for MyModule contexts"
@@ -280,10 +292,8 @@ Move-Context -ID 'UserSettings' -SourceVault "OldModule" -TargetVault "NewModule
 
 ```pwsh
 function Initialize-MyModuleContext {
-    # Create vault if it doesn't exist
-    if (-not (Get-ContextVault -Name "MyModule" -ErrorAction SilentlyContinue)) {
-        New-ContextVault -Name "MyModule" -Description "Context vault for MyModule"
-    }
+    # Create or configure vault 
+    Set-ContextVault -Name "MyModule" -Description "Context vault for MyModule"
 }
 ```
 
@@ -358,7 +368,7 @@ Existing contexts in the legacy single vault (`$HOME/.contextvault`) continue to
 
 1. Create a new vault for your contexts:
 ```pwsh
-New-ContextVault -Name "MyModule"
+Set-ContextVault -Name "MyModule"
 ```
 
 2. Move existing contexts to the new vault:

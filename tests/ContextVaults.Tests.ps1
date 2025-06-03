@@ -16,6 +16,7 @@ BeforeAll {
     
     # Load vault management functions
     . (Join-Path $ModuleRoot 'src/functions/public/New-ContextVault.ps1')
+    . (Join-Path $ModuleRoot 'src/functions/public/Set-ContextVault.ps1')
     . (Join-Path $ModuleRoot 'src/functions/public/Get-ContextVault.ps1')
     . (Join-Path $ModuleRoot 'src/functions/public/Remove-ContextVault.ps1')
     . (Join-Path $ModuleRoot 'src/functions/public/Rename-ContextVault.ps1')
@@ -25,7 +26,7 @@ BeforeAll {
     $testVaultPath = Join-Path -Path $script:Config.ContextVaultsPath -ChildPath "Vaults"
     if (Test-Path $testVaultPath) {
         Get-ChildItem -Path $testVaultPath -Directory | Where-Object { 
-            $_.Name -like "Test*" -or $_.Name -like "*Test*" -or $_.Name -like "Another*" -or $_.Name -like "Renamed*" 
+            $_.Name -like "Test*" -or $_.Name -like "*Test*" -or $_.Name -like "Another*" -or $_.Name -like "Renamed*" -or $_.Name -like "SetTestVault*" 
         } | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
     }
 }
@@ -170,12 +171,114 @@ Describe 'ContextVault Management Functions' {
             { Remove-ContextVault -Name "NonExistentVault" -Confirm:$false } | Should -Throw
         }
     }
+
+    Context 'Set-ContextVault' {
+        BeforeEach {
+            # Clean up any test vaults before each test
+            $testVaultPath = Join-Path -Path $script:Config.ContextVaultsPath -ChildPath "Vaults"
+            if (Test-Path $testVaultPath) {
+                Get-ChildItem -Path $testVaultPath -Directory | Where-Object { 
+                    $_.Name -like "SetTestVault*" 
+                } | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
+            }
+        }
+
+        It 'Should create a new vault when it does not exist' {
+            $vaultName = "SetTestVault1-$(Get-Random)"
+            
+            # Create the vault using Set-ContextVault
+            $result = Set-ContextVault -Name $vaultName -Description "Test vault description"
+            
+            # Verify the vault was created
+            $result | Should -Not -BeNullOrEmpty
+            $result.Name | Should -Be $vaultName
+            $result.Description | Should -Be "Test vault description"
+            $result.Path | Should -Exist
+            $result.ContextPath | Should -Exist
+            $result.Created | Should -BeOfType [DateTime]
+            $result.ContextCount | Should -Be 0
+            
+            # Verify vault can be retrieved
+            $retrievedVault = Get-ContextVault -Name $vaultName
+            $retrievedVault | Should -Not -BeNullOrEmpty
+            $retrievedVault.Name | Should -Be $vaultName
+            $retrievedVault.Description | Should -Be "Test vault description"
+        }
+
+        It 'Should update existing vault configuration' {
+            $vaultName = "SetTestVault2-$(Get-Random)"
+            
+            # Create initial vault
+            $initialResult = Set-ContextVault -Name $vaultName -Description "Initial description"
+            $initialResult | Should -Not -BeNullOrEmpty
+            
+            # Update the vault description
+            $updatedResult = Set-ContextVault -Name $vaultName -Description "Updated description"
+            
+            # Verify the vault was updated
+            $updatedResult | Should -Not -BeNullOrEmpty
+            $updatedResult.Name | Should -Be $vaultName
+            $updatedResult.Description | Should -Be "Updated description"
+            $updatedResult.Path | Should -Exist
+            $updatedResult.Created | Should -Be $initialResult.Created
+            $updatedResult.LastModified | Should -Not -BeNullOrEmpty
+            $updatedResult.LastModified | Should -BeOfType [DateTime]
+            
+            # Verify the change persisted
+            $retrievedVault = Get-ContextVault -Name $vaultName
+            $retrievedVault.Description | Should -Be "Updated description"
+        }
+
+        It 'Should handle vault directory without configuration file' {
+            $vaultName = "SetTestVault3-$(Get-Random)"
+            $vaultPath = Join-Path -Path $script:Config.ContextVaultsPath -ChildPath "Vaults" | Join-Path -ChildPath $vaultName
+            
+            # Create vault directory without configuration
+            $null = New-Item -Path $vaultPath -ItemType Directory -Force
+            
+            # Set-ContextVault should repair the configuration
+            $result = Set-ContextVault -Name $vaultName -Description "Repaired vault"
+            
+            # Verify the vault was repaired
+            $result | Should -Not -BeNullOrEmpty
+            $result.Name | Should -Be $vaultName
+            $result.Description | Should -Be "Repaired vault"
+            $result.Path | Should -Exist
+            $result.ContextPath | Should -Exist
+            
+            # Verify configuration file was created
+            $configPath = Join-Path -Path $vaultPath -ChildPath $script:Config.VaultConfigPath
+            $configPath | Should -Exist
+        }
+
+        It 'Should be idempotent when called multiple times' {
+            $vaultName = "SetTestVault4-$(Get-Random)"
+            
+            # Call Set-ContextVault multiple times
+            $result1 = Set-ContextVault -Name $vaultName -Description "Test description"
+            $result2 = Set-ContextVault -Name $vaultName -Description "Test description"
+            $result3 = Set-ContextVault -Name $vaultName -Description "Test description"
+            
+            # All results should be consistent
+            $result1.Name | Should -Be $vaultName
+            $result2.Name | Should -Be $vaultName
+            $result3.Name | Should -Be $vaultName
+            
+            $result1.Description | Should -Be "Test description"
+            $result2.Description | Should -Be "Test description"
+            $result3.Description | Should -Be "Test description"
+            
+            # Created time should remain the same, LastModified should be updated
+            $result1.Created | Should -Be $result2.Created
+            $result2.Created | Should -Be $result3.Created
+        }
+    }
 }
 
 AfterAll {
     # Clean up test vaults
     $testVaultPath = Join-Path -Path $script:Config.ContextVaultsPath -ChildPath "Vaults"
     if (Test-Path $testVaultPath) {
-        Get-ChildItem -Path $testVaultPath -Directory | Where-Object { $_.Name -like "Test*" -or $_.Name -like "*Test*" -or $_.Name -like "Another*" -or $_.Name -like "Renamed*" } | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
+        Get-ChildItem -Path $testVaultPath -Directory | Where-Object { $_.Name -like "Test*" -or $_.Name -like "*Test*" -or $_.Name -like "Another*" -or $_.Name -like "Renamed*" -or $_.Name -like "SetTestVault*" } | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
     }
 }
