@@ -90,14 +90,6 @@
     begin {
         $stackPath = Get-PSCallStackPath
         Write-Debug "[$stackPath] - Start"
-
-        if ($Vault) {
-            # Initialize the specified vault
-            Set-ContextVault -Name $Vault
-        } elseif (-not $script:Config.Initialized) {
-            # Fall back to legacy vault if no vault specified
-            Set-ContextVault
-        }
     }
 
     process {
