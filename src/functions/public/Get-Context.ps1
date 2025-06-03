@@ -47,12 +47,17 @@ function Get-Context {
         Retrieves all contexts from the context vault (directly from disk).
 
         .EXAMPLE
-        Get-Context -ID 'MySecret'
+        Get-Context -Vault "MyModule"
 
-        Retrieves the context called 'MySecret' from the vault.
+        Retrieves all contexts from the "MyModule" vault.
 
         .EXAMPLE
-        'My*' | Get-Context
+        Get-Context -ID 'MySecret' -Vault "MyModule"
+
+        Retrieves the context called 'MySecret' from the "MyModule" vault.
+
+        .EXAMPLE
+        'My*' | Get-Context -Vault "MyModule"
 
         Output:
         ```powershell
@@ -92,24 +97,45 @@ function Get-Context {
         )]
         [AllowEmptyString()]
         [SupportsWildcards()]
-        [string[]] $ID = '*'
+        [string[]] $ID = '*',
+
+        # The name of the vault to retrieve contexts from.
+        [Parameter()]
+        [string] $Vault
     )
 
     begin {
         $stackPath = Get-PSCallStackPath
         Write-Debug "[$stackPath] - Start"
 
-        if (-not $script:Config.Initialized) {
+        if ($Vault) {
+            # Initialize the specified vault
+            Set-ContextVault -Name $Vault
+        } elseif (-not $script:Config.Initialized) {
+            # Fall back to legacy vault if no vault specified
             Set-ContextVault
         }
     }
 
     process {
-        Write-Verbose "Retrieving contexts - ID: [$($ID -join ', ')]"
+        Write-Verbose "Retrieving contexts - ID: [$($ID -join ', ')] from vault: [$(if ($Vault) { $Vault } else { 'legacy' })]"
+        
+        # Determine the path to search for contexts
+        if ($Vault) {
+            $searchPath = Join-Path -Path $script:Config.ContextVaultsPath -ChildPath "Vaults" | Join-Path -ChildPath $Vault | Join-Path -ChildPath $script:Config.ContextPath
+        } else {
+            $searchPath = $script:Config.VaultPath
+        }
+
+        if (-not (Test-Path $searchPath)) {
+            Write-Verbose "Context path does not exist: $searchPath"
+            return
+        }
+
         foreach ($item in $ID) {
             Write-Verbose "Retrieving contexts - ID: [$item]"
             # Read context files directly from disk instead of using in-memory cache
-            $contextFiles = Get-ChildItem -Path $script:Config.VaultPath -Filter *.json -File -Recurse
+            $contextFiles = Get-ChildItem -Path $searchPath -Filter *.json -File -Recurse
             foreach ($file in $contextFiles) {
                 try {
                     $contextInfo = Get-Content -Path $file.FullName | ConvertFrom-Json

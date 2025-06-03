@@ -80,23 +80,44 @@
         )]
         [AllowEmptyString()]
         [SupportsWildcards()]
-        [string[]] $ID = '*'
+        [string[]] $ID = '*',
+
+        # The name of the vault to retrieve context info from.
+        [Parameter()]
+        [string] $Vault
     )
 
     begin {
         $stackPath = Get-PSCallStackPath
         Write-Debug "[$stackPath] - Start"
 
-        if (-not $script:Config.Initialized) {
+        if ($Vault) {
+            # Initialize the specified vault
+            Set-ContextVault -Name $Vault
+        } elseif (-not $script:Config.Initialized) {
+            # Fall back to legacy vault if no vault specified
             Set-ContextVault
         }
     }
 
     process {
-        Write-Verbose "Retrieving context info - ID: [$ID]"
+        Write-Verbose "Retrieving context info - ID: [$ID] from vault: [$(if ($Vault) { $Vault } else { 'legacy' })]"
+        
+        # Determine the search path
+        if ($Vault) {
+            $searchPath = Join-Path -Path $script:Config.ContextVaultsPath -ChildPath "Vaults" | Join-Path -ChildPath $Vault | Join-Path -ChildPath $script:Config.ContextPath
+        } else {
+            $searchPath = $script:Config.VaultPath
+        }
+
+        if (-not (Test-Path $searchPath)) {
+            Write-Verbose "Search path does not exist: $searchPath"
+            return
+        }
+
         foreach ($item in $ID) {
             # Read context files directly from disk instead of using in-memory cache
-            $contextFiles = Get-ChildItem -Path $script:Config.VaultPath -Filter *.json -File -Recurse
+            $contextFiles = Get-ChildItem -Path $searchPath -Filter *.json -File -Recurse
             foreach ($file in $contextFiles) {
                 try {
                     $contextInfo = Get-Content -Path $file.FullName | ConvertFrom-Json

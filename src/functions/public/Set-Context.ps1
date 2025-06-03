@@ -11,7 +11,7 @@ function Set-Context {
         Each context operation reads the current state from disk to ensure consistency across processes.
 
         .EXAMPLE
-        Set-Context -ID 'PSModule.GitHub' -Context @{ Name = 'MySecret' }
+        Set-Context -ID 'PSModule.GitHub' -Context @{ Name = 'MySecret' } -Vault "MyModule"
 
         Output:
         ```powershell
@@ -20,10 +20,10 @@ function Set-Context {
         Context : @{ Name = 'MySecret' }
         ```
 
-        Creates a context called 'MySecret' in the vault.
+        Creates a context called 'MySecret' in the "MyModule" vault.
 
         .EXAMPLE
-        Set-Context -ID 'PSModule.GitHub' -Context @{ Name = 'MySecret'; AccessToken = '123123123' }
+        Set-Context -ID 'PSModule.GitHub' -Context @{ Name = 'MySecret'; AccessToken = '123123123' } -Vault "MyModule"
 
         Output:
         ```powershell
@@ -63,14 +63,22 @@ function Set-Context {
 
         # Pass the context through the pipeline.
         [Parameter()]
-        [switch] $PassThru
+        [switch] $PassThru,
+
+        # The name of the vault to store the context in.
+        [Parameter()]
+        [string] $Vault
     )
 
     begin {
         $stackPath = Get-PSCallStackPath
         Write-Debug "[$stackPath] - Start"
 
-        if (-not $script:Config.Initialized) {
+        if ($Vault) {
+            # Initialize the specified vault
+            Set-ContextVault -Name $Vault
+        } elseif (-not $script:Config.Initialized) {
+            # Fall back to legacy vault if no vault specified
             Set-ContextVault
         }
     }
@@ -86,9 +94,24 @@ function Set-Context {
         if (-not $ID) {
             throw 'An ID is required, either as a parameter or as a property of the context object.'
         }
+
+        # Determine the search path and storage path
+        if ($Vault) {
+            $searchPath = Join-Path -Path $script:Config.ContextVaultsPath -ChildPath "Vaults" | Join-Path -ChildPath $Vault | Join-Path -ChildPath $script:Config.ContextPath
+            $basePath = Join-Path -Path $script:Config.ContextVaultsPath -ChildPath "Vaults" | Join-Path -ChildPath $Vault | Join-Path -ChildPath $script:Config.ContextPath
+        } else {
+            $searchPath = $script:Config.VaultPath
+            $basePath = $script:Config.VaultPath
+        }
+
+        # Ensure the directory exists
+        if (-not (Test-Path $searchPath)) {
+            $null = New-Item -Path $searchPath -ItemType Directory -Force
+        }
+
         $existingContextFile = $null
         # Check if context already exists by scanning disk files
-        $contextFiles = Get-ChildItem -Path $script:Config.VaultPath -Filter *.json -File -Recurse
+        $contextFiles = Get-ChildItem -Path $searchPath -Filter *.json -File -Recurse -ErrorAction SilentlyContinue
         foreach ($file in $contextFiles) {
             try {
                 $contextInfo = Get-Content -Path $file.FullName | ConvertFrom-Json
@@ -103,11 +126,11 @@ function Set-Context {
         }
 
         if (-not $existingContextFile) {
-            Write-Verbose "Context [$ID] not found in vault"
+            Write-Verbose "Context [$ID] not found in vault$(if ($Vault) { " [$Vault]" })"
             $Guid = [Guid]::NewGuid().ToString()
-            $Path = Join-Path -Path $script:Config.VaultPath -ChildPath "$Guid.json"
+            $Path = Join-Path -Path $basePath -ChildPath "$Guid.json"
         } else {
-            Write-Verbose "Context [$ID] found in vault"
+            Write-Verbose "Context [$ID] found in vault$(if ($Vault) { " [$Vault]" })"
         }
 
         $contextJson = ConvertTo-ContextJson -Context $Context -ID $ID
@@ -120,12 +143,12 @@ function Set-Context {
         Write-Debug ($param | ConvertTo-Json -Depth 5)
 
         if ($PSCmdlet.ShouldProcess($ID, 'Set context')) {
-            Write-Verbose "Setting context [$ID] in vault"
+            Write-Verbose "Setting context [$ID] in vault$(if ($Vault) { " [$Vault]" })"
             Set-Content -Path $Path -Value $param
         }
 
         if ($PassThru) {
-            Get-Context -ID $ID
+            Get-Context -ID $ID -Vault $Vault
         }
     }
 

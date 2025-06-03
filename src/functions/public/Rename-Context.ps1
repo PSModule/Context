@@ -55,32 +55,40 @@
 
         # Force the rename even if the new ID already exists.
         [Parameter()]
-        [switch] $Force
+        [switch] $Force,
+
+        # The name of the vault containing the context.
+        [Parameter()]
+        [string] $Vault
     )
 
     begin {
         $stackPath = Get-PSCallStackPath
         Write-Debug "[$stackPath] - Start"
 
-        if (-not $script:Config.Initialized) {
+        if ($Vault) {
+            # Initialize the specified vault
+            Set-ContextVault -Name $Vault
+        } elseif (-not $script:Config.Initialized) {
+            # Fall back to legacy vault if no vault specified
             Set-ContextVault
         }
     }
 
     process {
-        $context = Get-Context -ID $ID
+        $context = Get-Context -ID $ID -Vault $Vault
         if (-not $context) {
-            throw "Context with ID '$ID' not found."
+            throw "Context with ID '$ID' not found$(if ($Vault) { " in vault '$Vault'" })."
         }
 
-        $existingContext = Get-Context -ID $NewID
+        $existingContext = Get-Context -ID $NewID -Vault $Vault
         if ($existingContext -and -not $Force) {
-            throw "Context with ID '$NewID' already exists."
+            throw "Context with ID '$NewID' already exists$(if ($Vault) { " in vault '$Vault'" })."
         }
 
-        if ($PSCmdlet.ShouldProcess("Renaming context '$ID' to '$NewID'")) {
-            $context | Set-Context -ID $NewID
-            Remove-Context -ID $ID
+        if ($PSCmdlet.ShouldProcess("Renaming context '$ID' to '$NewID'$(if ($Vault) { " in vault '$Vault'" })")) {
+            $context | Set-Context -ID $NewID -Vault $Vault
+            Remove-Context -ID $ID -Vault $Vault
         }
     }
 

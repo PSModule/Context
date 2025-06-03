@@ -6,15 +6,20 @@ function Set-ContextVault {
         Sets the context vault.
 
         .DESCRIPTION
-        Sets the context vault. If the vault does not exist, it will be initialized.
+        Sets the specified context vault for use. If the vault does not exist, it will be created.
         Once the context vault is set, the keys will be prepared for use.
-        The vault consists of multiple security shards, including a machine-specific shard,
+        Each vault consists of multiple security shards, including a machine-specific shard,
         a user-specific shard, and a seed shard stored within the vault directory.
+
+        .EXAMPLE
+        Set-ContextVault -Name "MyModule"
+
+        Initializes or loads the "MyModule" context vault, setting up necessary key pairs.
 
         .EXAMPLE
         Set-ContextVault
 
-        Initializes or loads the context vault, setting up necessary key pairs.
+        For backward compatibility, loads the legacy single vault if no name is specified.
 
         .OUTPUTS
         None.
@@ -26,7 +31,11 @@ function Set-ContextVault {
         https://psmodule.io/Context/Functions/Set-ContextVault
     #>
     [CmdletBinding(SupportsShouldProcess)]
-    param()
+    param(
+        # The name of the vault to set. If not specified, uses legacy single vault.
+        [Parameter()]
+        [string] $Name
+    )
 
     begin {
         $stackPath = Get-PSCallStackPath
@@ -35,39 +44,99 @@ function Set-ContextVault {
 
     process {
         try {
-            Write-Verbose "Loading context vault from [$($script:Config.VaultPath)]"
-            $vaultExists = Test-Path $script:Config.VaultPath
-            Write-Verbose "Vault exists: $vaultExists"
+            if ($Name) {
+                # Multi-vault mode
+                Write-Verbose "Loading context vault [$Name]"
+                
+                # Check if keys are already cached
+                if ($script:Config.VaultKeys.ContainsKey($Name)) {
+                    Write-Verbose "Using cached keys for vault [$Name]"
+                    $cachedKeys = $script:Config.VaultKeys[$Name]
+                    $script:Config.PrivateKey = $cachedKeys.PrivateKey
+                    $script:Config.PublicKey = $cachedKeys.PublicKey
+                    $script:Config.CurrentVault = $Name
+                    $script:Config.Initialized = $true
+                    return
+                }
 
-            if (-not $vaultExists) {
-                Write-Verbose 'Initializing new vault'
-                $null = New-Item -Path $script:Config.VaultPath -ItemType Directory
+                $vaultPath = Join-Path -Path $script:Config.ContextVaultsPath -ChildPath "Vaults" | Join-Path -ChildPath $Name
+                $contextPath = Join-Path -Path $vaultPath -ChildPath $script:Config.ContextPath
+                $seedShardPath = Join-Path -Path $vaultPath -ChildPath $script:Config.SeedShardPath
+                $configPath = Join-Path -Path $vaultPath -ChildPath $script:Config.VaultConfigPath
+
+                Write-Verbose "Vault path: $vaultPath"
+                $vaultExists = Test-Path $vaultPath
+                Write-Verbose "Vault exists: $vaultExists"
+
+                if (-not $vaultExists) {
+                    Write-Verbose "Creating new vault [$Name]"
+                    New-ContextVault -Name $Name -Description "Auto-created vault for $Name"
+                }
+
+                Write-Verbose 'Checking for existing seed shard'
+                $seedShardExists = Test-Path $seedShardPath
+                Write-Verbose "Seed shard exists: $seedShardExists"
+
+                if (-not $seedShardExists) {
+                    Write-Verbose 'Creating new seed shard'
+                    $seedShardContent = [System.Guid]::NewGuid().ToString()
+                    Set-Content -Path $seedShardPath -Value $seedShardContent -NoNewline
+                } else {
+                    $seedShardContent = Get-Content -Path $seedShardPath -Raw
+                }
+
+                $machineShard = [System.Environment]::MachineName
+                $userShard = [System.Environment]::UserName
+                $seed = $machineShard + $userShard + $seedShardContent
+                $keys = New-SodiumKeyPair -Seed $seed
+                
+                # Cache the keys for this vault
+                $script:Config.VaultKeys[$Name] = @{
+                    PrivateKey = $keys.PrivateKey
+                    PublicKey = $keys.PublicKey
+                }
+                
+                $script:Config.PrivateKey = $keys.PrivateKey
+                $script:Config.PublicKey = $keys.PublicKey
+                $script:Config.CurrentVault = $Name
+                Write-Verbose "Vault [$Name] initialized"
+                $script:Config.Initialized = $true
+            } else {
+                # Legacy single vault mode for backward compatibility
+                Write-Verbose "Loading legacy context vault from [$($script:Config.VaultPath)]"
+                $vaultExists = Test-Path $script:Config.VaultPath
+                Write-Verbose "Legacy vault exists: $vaultExists"
+
+                if (-not $vaultExists) {
+                    Write-Verbose 'Initializing new legacy vault'
+                    $null = New-Item -Path $script:Config.VaultPath -ItemType Directory
+                }
+
+                Write-Verbose 'Checking for existing seed shard'
+                $seedShardPath = Join-Path -Path $script:Config.VaultPath -ChildPath 'vault.shard'
+                $seedShardExists = Test-Path $seedShardPath
+                Write-Verbose "Seed shard exists: $seedShardExists"
+
+                if (-not $seedShardExists) {
+                    Write-Verbose 'Creating new seed shard'
+                    $keys = New-SodiumKeyPair
+                    Set-Content -Path $seedShardPath -Value "$($keys.PrivateKey)$($keys.PublicKey)"
+                }
+
+                $seedShard = Get-Content -Path $seedShardPath
+                $machineShard = [System.Environment]::MachineName
+                $userShard = [System.Environment]::UserName
+                $seed = $machineShard + $userShard + $seedShard
+                $keys = New-SodiumKeyPair -Seed $seed
+                $script:Config.PrivateKey = $keys.PrivateKey
+                $script:Config.PublicKey = $keys.PublicKey
+                $script:Config.CurrentVault = $null
+                Write-Verbose 'Legacy vault initialized'
+                $script:Config.Initialized = $true
             }
-
-            Write-Verbose 'Checking for existing seed shard'
-            $seedShardPath = Join-Path -Path $script:Config.VaultPath -ChildPath $script:Config.SeedShardPath
-            $seedShardExists = Test-Path $seedShardPath
-            Write-Verbose "Seed shard exists: $seedShardExists"
-
-            if (-not $seedShardExists) {
-                Write-Verbose 'Creating new seed shard'
-                $keys = New-SodiumKeyPair
-                Set-Content -Path $seedShardPath -Value "$($keys.PrivateKey)$($keys.PublicKey)"
-            }
-
-            $seedShard = Get-Content -Path $seedShardPath
-            $machineShard = [System.Environment]::MachineName
-            $userShard = [System.Environment]::UserName
-            #$userInputShard = Read-Host -Prompt 'Enter a seed shard' # Eventually 4 shards. +1 for user input.
-            $seed = $machineShard + $userShard + $seedShard # + $userInputShard
-            $keys = New-SodiumKeyPair -Seed $seed
-            $script:Config.PrivateKey = $keys.PrivateKey
-            $script:Config.PublicKey = $keys.PublicKey
-            Write-Verbose 'Vault initialized'
-            $script:Config.Initialized = $true
         } catch {
             Write-Error $_
-            throw 'Failed to initialize context vault'
+            throw "Failed to initialize context vault$(if ($Name) { " '$Name'" })"
         }
     }
 
