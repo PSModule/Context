@@ -19,7 +19,7 @@ this is just an example. Any data that can be represented in JSON format can be 
 
 When saving a `Context` using `Set-Context`, data is first converted to plain-text JSON, then encrypted before being saved to disk. `SecureStrings` are
 marked with a special `[SECURESTRING]` prefix to indicate that they should be restored to a `SecureString`. When the `Context` is accessed using
-`Get-Context` the data is read from disk and decrypted, restoring it as an object. Any `SecureString` values are restored to a `SecureString` within
+`Get-Context`, the data is read from disk and decrypted, restoring it as an object. Any `SecureString` values are restored to a `SecureString` within
 that object.
 
 ### 1. Storing data (object or dictionary) to disk using `Set-Context`
