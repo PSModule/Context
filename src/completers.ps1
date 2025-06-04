@@ -15,7 +15,7 @@ Register-ArgumentCompleter -CommandName ($script:PSModuleInfo.FunctionsToExport)
 }
 
 # Vault name completion for vault functions and context functions
-Register-ArgumentCompleter -CommandName ($script:PSModuleInfo.FunctionsToExport) | Where-Object { $_ -like '*-ContextVault' } -ParameterName 'Name' -ScriptBlock {
+Register-ArgumentCompleter -CommandName ($script:PSModuleInfo.FunctionsToExport | Where-Object { $_ -like '*-ContextVault' }) -ParameterName 'Name' -ScriptBlock {
     param($commandName, $parameterName, $wordToComplete, $commandAst, $fakeBoundParameter)
     $null = $commandName, $parameterName, $wordToComplete, $commandAst, $fakeBoundParameter
 
@@ -26,7 +26,7 @@ Register-ArgumentCompleter -CommandName ($script:PSModuleInfo.FunctionsToExport)
 }
 
 # Vault parameter completion for context functions
-Register-ArgumentCompleter -CommandName ($script:PSModuleInfo.FunctionsToExport) | Where-Object { $_ -like '*-Context' } -ParameterName 'Vault' -ScriptBlock {
+Register-ArgumentCompleter -CommandName ($script:PSModuleInfo.FunctionsToExport | Where-Object { $_ -like '*-Context' }) -ParameterName 'Vault' -ScriptBlock {
     param($commandName, $parameterName, $wordToComplete, $commandAst, $fakeBoundParameter)
     $null = $commandName, $parameterName, $wordToComplete, $commandAst, $fakeBoundParameter
 
