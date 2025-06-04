@@ -17,7 +17,7 @@ Describe 'ContextVault Management Functions' {
         AfterAll {
             Get-ContextVault -Name 'test-*' | Remove-ContextVault -Confirm:$false
         }
-        
+
         It 'Should create a new vault with a single name parameter' {
             $result = Set-ContextVault -Name 'test-vault1'
             $result | Should -Not -BeNullOrEmpty
@@ -116,7 +116,7 @@ Describe 'ContextVault Management Functions' {
             Remove-ContextVault -Name 'remove-*' -Confirm:$false
             $results = Get-ContextVault -Name 'remove-*'
             $results | Should -BeNullOrEmpty
-            
+
             # Verify other vaults are still present
             $kept = Get-ContextVault -Name 'keep-*'
             $kept | Should -Not -BeNullOrEmpty
@@ -145,7 +145,7 @@ Describe 'ContextVault Management Functions' {
             Set-ContextVault -Name 'reset-test1'
             Set-ContextVault -Name 'reset-test2'
             Set-ContextVault -Name 'reset-other'
-            
+
             # To properly test reset, we'd need to add content to the vaults
             # but we don't have full context of how to do that in these tests
             # So we'll focus on validating that reset operations don't throw
@@ -166,7 +166,7 @@ Describe 'ContextVault Management Functions' {
             { Reset-ContextVault -Name 'reset-*' -Confirm:$false } | Should -Not -Throw
             $results = Get-ContextVault -Name 'reset-*'
             $results | Should -Not -BeNullOrEmpty
-            $results | Should -HaveCount 2
+            $results | Should -HaveCount 3
         }
 
         It 'Should reset vaults using pipeline input from vault objects' {
@@ -179,47 +179,47 @@ Describe 'ContextVault Management Functions' {
             { Reset-ContextVault -Name 'nonexistent-vault' -Confirm:$false } | Should -Not -Throw
         }
     }
-    
+
     Context 'Pipeline and Combined Operations' {
         BeforeAll {
             Get-ContextVault | Remove-ContextVault -Confirm:$false
             'pipeline-test1', 'pipeline-test2', 'pipeline-test3' | Set-ContextVault
         }
-        
+
         AfterAll {
             Get-ContextVault | Remove-ContextVault -Confirm:$false
         }
-        
+
         It 'Should support pipeline operations with variables' {
             $testVaults = @('pipeline-var1', 'pipeline-var2')
             $results = $testVaults | Set-ContextVault
             $results | Should -HaveCount 2
-            
+
             $getResults = Get-ContextVault -Name $testVaults
             $getResults | Should -HaveCount 2
-            
+
             $getResults | Remove-ContextVault -Confirm:$false
             $checkResults = Get-ContextVault -Name $testVaults
             $checkResults | Should -BeNullOrEmpty
         }
-        
+
         It 'Should get vaults and pass to reset through pipeline' {
             $vaults = Get-ContextVault -Name 'pipeline-test*'
             $vaults | Should -HaveCount 3
-            
+
             { $vaults | Reset-ContextVault -Confirm:$false } | Should -Not -Throw
-            
+
             $resetVaults = Get-ContextVault -Name 'pipeline-test*'
             $resetVaults | Should -HaveCount 3
         }
-        
+
         It 'Should process arrays of vault names through the pipeline' {
             $vaultBatch = @('batch-test1', 'batch-test2', 'batch-test3')
             $vaultBatch | Set-ContextVault
-            
+
             $results = Get-ContextVault -Name 'batch-*'
             $results | Should -HaveCount 3
-            
+
             $results | Remove-ContextVault -Confirm:$false
             $checkResults = Get-ContextVault -Name 'batch-*'
             $checkResults | Should -BeNullOrEmpty
