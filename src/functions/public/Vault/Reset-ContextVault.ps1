@@ -45,7 +45,7 @@
                     foreach ($vaultItem in $vaults) {
                         if ($PSCmdlet.ShouldProcess("ContextVault: [$vaultName]", 'Reset')) {
                             Write-Verbose "Resetting ContextVault [$vaultName] at path [$($vaultItem.Path)]"
-                            Remove-ContextVault -Name $vaultName
+                            Remove-ContextVault -Name $vaultName -Confirm:$false
                             Set-ContextVault -Name $vaultName
                             Write-Verbose "ContextVault [$vaultName] reset successfully."
                         }
