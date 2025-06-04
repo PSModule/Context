@@ -39,11 +39,14 @@
     begin {
         $stackPath = Get-PSCallStackPath
         Write-Debug "[$stackPath] - Start"
+        $vaults = Get-ChildItem $script:Config.VaultsPath -Directory
     }
 
     process {
-        Get-ChildItem $script:Config.VaultsPath -Directory | Where-Object { $_.Name -like $Name } | ForEach-Object {
-            [ContextVault]::new($_.Name, $_.FullName)
+        foreach ($vaultName in $Name) {
+            $vaults | Where-Object { $_.Name -like $vaultName } | ForEach-Object {
+                [ContextVault]::new($_.Name, $_.FullName)
+            }
         }
     }
 
