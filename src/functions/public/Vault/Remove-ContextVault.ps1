@@ -18,8 +18,13 @@
     [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'High')]
     param(
         # The name of the vault to remove.
-        [Parameter(Mandatory)]
-        [string] $Name
+        [Parameter(ValueFromPipeline, ValueFromPipelineByPropertyName, ParameterSetName = 'By Name')]
+        [SupportsWildcards()]
+        [string[]] $Name = '*',
+
+        # The vault object to remove.
+        [Parameter(Mandatory, ValueFromPipeline, ParameterSetName = 'As ContextVault')]
+        [ContextVault[]] $Vault
     )
 
     begin {
@@ -28,16 +33,23 @@
     }
 
     process {
-        $vault = Get-ContextVaultInfo -Name $Name
+        switch ($PSCmdlet.ParameterSetName) {
+            'By Name' {
+                foreach ($vaultName in $Name) {
+                    $vaults = Get-ContextVault -Name $vaultName
 
-        if (-not $vault) {
-            return
-        }
-
-        Write-Verbose "Removing ContextVault [$Name] at path [$($vault.VaultPath)]"
-        if ($PSCmdlet.ShouldProcess("ContextVault: [$Name]", 'Remove')) {
-            Remove-Item -Path $vault.VaultPath -Recurse -Force
-            Write-Verbose "ContextVault [$Name] removed successfully."
+                    foreach ($vaultItem in $vaults) {
+                        Write-Verbose "Removing ContextVault [$($vaultItem.Name)] at path [$($vaultItem.Path)]"
+                        if ($PSCmdlet.ShouldProcess("ContextVault: [$($vaultItem.Name)]", 'Remove')) {
+                            Remove-Item -Path $vaultItem.Path -Recurse -Force
+                            Write-Verbose "ContextVault [$($vaultItem.Name)] removed successfully."
+                        }
+                    }
+                }
+            }
+            'As ContextVault' {
+                $Vault.Name | Remove-ContextVault
+            }
         }
     }
 

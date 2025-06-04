@@ -13,25 +13,22 @@
         Resets the 'MyModule' vault, deleting all contexts and regenerating encryption keys.
 
         .OUTPUTS
-        [PSCustomObject]
+        [ContextVault]
 
         .LINK
         https://psmodule.io/Context/Functions/Vault/Reset-ContextVault/
     #>
-    [OutputType([PSCustomObject])]
+    [OutputType([ContextVault])]
     [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'High')]
     param(
         # The name of the vault to reset.
-        [Parameter(
-            Mandatory,
-            ValueFromPipeline,
-            ValueFromPipelineByPropertyName
-        )]
-        [string] $Name,
+        [Parameter(ValueFromPipeline, ValueFromPipelineByPropertyName, ParameterSetName = 'By Name')]
+        [SupportsWildcards()]
+        [string[]] $Name = '*',
 
-        # Skip confirmation prompts.
-        [Parameter()]
-        [switch] $Force
+        # The vault object to reset.
+        [Parameter(Mandatory, ValueFromPipeline, ParameterSetName = 'As ContextVault')]
+        [ContextVault[]] $Vault
     )
 
     begin {
@@ -40,17 +37,26 @@
     }
 
     process {
-        $vault = Get-ContextVaultInfo -Name $Name
+        switch ($PSCmdlet.ParameterSetName) {
+            'By Name' {
+                foreach ($vaultName in $Name) {
+                    $vaults = Get-ContextVault -Name $vaultName
 
-        if (-not $vault) {
-            throw "Vault '$Name' does not exist."
+                    foreach ($vaultItem in $vaults) {
+                        if ($PSCmdlet.ShouldProcess("ContextVault: [$vaultName]", 'Reset')) {
+                            Write-Verbose "Resetting ContextVault [$vaultName] at path [$($vaultItem.Path)]"
+                            Remove-ContextVault -Name $vaultName
+                            Set-ContextVault -Name $vaultName
+                            Write-Verbose "ContextVault [$vaultName] reset successfully."
+                        }
+                    }
+                }
+            }
+            'As ContextVault' {
+                $Vault.Name | Reset-ContextVault
+            }
         }
-        if ($PSCmdlet.ShouldProcess("ContextVault: [$Name]", 'Reset')) {
-            Write-Verbose "Resetting ContextVault [$Name] at path [$($vault.VaultPath)]"
-            Remove-ContextVault -Name $Name
-            Set-ContextVault -Name $Name
-            Write-Verbose "ContextVault [$Name] reset successfully."
-        }
+
     }
 
     end {

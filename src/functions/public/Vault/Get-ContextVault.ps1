@@ -22,12 +22,12 @@
         Gets information about all vaults starting with 'My'.
 
         .OUTPUTS
-        [PSCustomObject[]]
+        [ContextVault[]]
 
         .LINK
         https://psmodule.io/Context/Functions/Vault/Get-ContextVault/
     #>
-    [OutputType([PSCustomObject[]])]
+    [OutputType([ContextVault[]])]
     [CmdletBinding()]
     param(
         # The name of the vault to retrieve. Supports wildcards.
@@ -43,10 +43,7 @@
 
     process {
         Get-ChildItem $script:Config.VaultsPath -Directory | Where-Object { $_.Name -like $Name } | ForEach-Object {
-            [PSCustomObject]@{
-                Name = $_.Name
-                Path = $_.FullName
-            }
+            [ContextVault]::new($_.Name, $_.FullName)
         }
     }
 

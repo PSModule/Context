@@ -14,18 +14,17 @@ function Set-ContextVault {
         Creates a new vault named 'MyModule' or updates its description if it already exists.
 
         .OUTPUTS
-        [PSCustomObject]
+        [ContextVault]
 
         .LINK
         https://psmodule.io/Context/Functions/Vault/Set-ContextVault/
     #>
-    [OutputType([PSCustomObject])]
+    [OutputType([ContextVault])]
     [CmdletBinding(SupportsShouldProcess)]
     param(
         # The name of the vault to create or update.
-        [Parameter(Mandatory)]
-        [ValidateNotNullOrEmpty()]
-        [string] $Name
+        [Parameter(Mandatory, ValueFromPipeline, ValueFromPipelineByPropertyName)]
+        [string[]] $Name
     )
 
     begin {
@@ -34,27 +33,27 @@ function Set-ContextVault {
     }
 
     process {
-        $vault = Get-ContextVaultInfo -Name $Name
+        foreach ($vaultName in $Name) {
+            Write-Verbose "Processing vault: $vaultName"
+            $vault = Get-ContextVaultInfo -Name $vaultName
 
-        if ($PSCmdlet.ShouldProcess($Name, 'Set context vault configuration')) {
-            if (-not (Test-Path $vault.VaultPath)) {
-                Write-Verbose "Creating new vault [$Name]"
-                $null = New-Item -Path $vault.VaultPath -ItemType Directory -Force
-            }
-            # Ensure context directory exists
-            if (-not (Test-Path $vault.ContextFolderPath)) {
-                $null = New-Item -Path $vault.ContextFolderPath -ItemType Directory -Force
-            }
+            if ($PSCmdlet.ShouldProcess($vault.Name, 'Set context vault configuration')) {
+                if (-not (Test-Path $vault.VaultPath)) {
+                    Write-Verbose "Creating new vault [$($vault.Name)]"
+                    $null = New-Item -Path $vault.VaultPath -ItemType Directory -Force
+                }
+                # Ensure context directory exists
+                if (-not (Test-Path $vault.ContextFolderPath)) {
+                    $null = New-Item -Path $vault.ContextFolderPath -ItemType Directory -Force
+                }
 
-            if (-not (Test-Path $vault.ShardFilePath)) {
-                Write-Verbose "Generating encryption keys for vault [$Name]"
-                $seedShardContent = [System.Guid]::NewGuid().ToString()
-                Set-Content -Path $vault.ShardFilePath -Value $seedShardContent
-            }
+                if (-not (Test-Path $vault.ShardFilePath)) {
+                    Write-Verbose "Generating encryption keys for vault [$($vault.Name)]"
+                    $seedShardContent = [System.Guid]::NewGuid().ToString()
+                    Set-Content -Path $vault.ShardFilePath -Value $seedShardContent
+                }
 
-            [PSCustomObject]@{
-                Name = $Name
-                Path = $vault.VaultPath
+                [ContextVault]::new($vault.Name, $vault.VaultPath)
             }
         }
     }

@@ -31,6 +31,7 @@
     process {
         $path = Join-Path -Path $script:Config.VaultsPath -ChildPath $Name
         [pscustomobject]@{
+            Name                = $Name
             VaultPath           = $path
             ContextFolderPath   = Join-Path -Path $path -ChildPath $script:Config.ContextFolderName
             ShardFilePath       = Join-Path -Path $path -ChildPath $script:Config.SeedShardFileName
