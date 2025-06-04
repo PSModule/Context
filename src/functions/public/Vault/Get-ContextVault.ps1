@@ -46,6 +46,9 @@
     }
 
     process {
+        if ($vaults.Count -eq 0) {
+            return
+        }
         foreach ($vaultName in $Name) {
             $vaults | Where-Object { $_.Name -like $vaultName } | ForEach-Object {
                 [ContextVault]::new($_.Name, $_.FullName)
