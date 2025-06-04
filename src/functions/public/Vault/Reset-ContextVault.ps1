@@ -43,8 +43,7 @@
         $vault = Get-ContextVaultInfo -Name $Name
 
         if (-not $vault) {
-            Write-Error "Vault '$Name' does not exist."
-            return
+            throw "Vault '$Name' does not exist."
         }
         if ($PSCmdlet.ShouldProcess("ContextVault: [$Name]", 'Reset')) {
             Write-Verbose "Resetting ContextVault [$Name] at path [$($vault.VaultPath)]"

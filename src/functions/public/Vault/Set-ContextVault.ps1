@@ -53,10 +53,8 @@ function Set-ContextVault {
             }
 
             [PSCustomObject]@{
-                Name              = $Name
-                Path              = $vault.VaultPath
-                ContextFolderPath = $vault.ContextFolderPath
-                ShardFilePath     = $vault.ShardFilePath
+                Name = $Name
+                Path = $vault.VaultPath
             }
         }
     }

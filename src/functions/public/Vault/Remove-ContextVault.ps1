@@ -31,7 +31,6 @@
         $vault = Get-ContextVaultInfo -Name $Name
 
         if (-not $vault) {
-            Write-Error "Vault '$Name' does not exist."
             return
         }
 
