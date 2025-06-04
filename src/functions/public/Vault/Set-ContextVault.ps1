@@ -42,20 +42,21 @@ function Set-ContextVault {
                 $null = New-Item -Path $vault.VaultPath -ItemType Directory -Force
             }
             # Ensure context directory exists
-            if (-not (Test-Path $vault.ContextFolderName)) {
-                $null = New-Item -Path $vault.ContextFolderName -ItemType Directory -Force
+            if (-not (Test-Path $vault.ContextFolderPath)) {
+                $null = New-Item -Path $vault.ContextFolderPath -ItemType Directory -Force
             }
 
-            if (-not (Test-Path $vault.ShardPath)) {
+            if (-not (Test-Path $vault.ShardFilePath)) {
                 Write-Verbose "Generating encryption keys for vault [$Name]"
                 $seedShardContent = [System.Guid]::NewGuid().ToString()
-                Set-Content -Path $vault.ShardPath -Value $seedShardContent
+                Set-Content -Path $vault.ShardFilePath -Value $seedShardContent
             }
 
             [PSCustomObject]@{
-                Name        = $Name
-                Path        = $vault.VaultPath
-                ContextFolderName = $vault.ContextFolderName
+                Name              = $Name
+                Path              = $vault.VaultPath
+                ContextFolderPath = $vault.ContextFolderPath
+                ShardFilePath     = $vault.ShardFilePath
             }
         }
     }
