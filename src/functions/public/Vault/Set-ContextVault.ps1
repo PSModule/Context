@@ -53,7 +53,7 @@ function Set-ContextVault {
                     Set-Content -Path $vault.ShardFilePath -Value $seedShardContent
                 }
 
-                [ContextVault]::new($vault.Name, $vault.VaultPath)
+                [ContextVault]::new($vault.Name, $vault.VaultPath, $vault.ContextFolderPath, $vault.ShardFilePath, $vault.VaultConfigFilePath)
             }
         }
     }

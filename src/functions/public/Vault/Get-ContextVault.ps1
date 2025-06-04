@@ -51,7 +51,8 @@
         }
         foreach ($vaultName in $Name) {
             $vaults | Where-Object { $_.Name -like $vaultName } | ForEach-Object {
-                [ContextVault]::new($_.Name, $_.FullName)
+                $info = Get-ContextVaultInfo -Name $_.Name
+                [ContextVault]::new($_.Name, $_.FullName, $info.ContextFolderPath, $info.ShardFilePath, $info.VaultConfigFilePath)
             }
         }
     }
