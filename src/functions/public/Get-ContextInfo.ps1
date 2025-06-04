@@ -1,11 +1,11 @@
 ﻿function Get-ContextInfo {
     <#
         .SYNOPSIS
-        Retrieves info about a context from the context vault.
+        Retrieves info about a context from a context vault.
 
         .DESCRIPTION
-        Retrieves info about context files directly from the vault directory on disk.
-        If no ID is specified, all available info on contexts will be returned.
+        Retrieves info about contexts directly from a ContextVault.
+        If no ID is specified, info on all contexts will be returned.
         Wildcards are supported to match multiple contexts.
         Only metadata (ID and Path) is returned without decrypting the context contents.
 
@@ -14,8 +14,9 @@
 
         Output:
         ```powershell
-        ID   : MySettings
-        Path : ...\b7c01dbe-bccd-4c7e-b075-c5aac1c43b1a.json
+        ID                 Path
+        --                 ----
+        MySettings         C:\Users\<username>\.contextvaults\Vaults\Contexts\b7c01dbe-bccd-4c7e-b075-c5aac1c43b1a.json
 
         ID   : MyConfig
         Path : ...\feacc853-5bea-48d1-b751-41ce9768d48e.json
@@ -74,17 +75,13 @@
     [CmdletBinding()]
     param(
         # The name of the context to retrieve from the vault. Supports wildcards.
-        [Parameter(
-            ValueFromPipeline,
-            ValueFromPipelineByPropertyName
-        )]
-        [AllowEmptyString()]
+        [Parameter()]
         [SupportsWildcards()]
         [string[]] $ID = '*',
 
-        # The name of the vault to retrieve context info from.
+        # The name of the vault to retrieve context info from. Supports wildcards.
         [Parameter()]
-        [string] $Vault
+        [string] $Vault = '*'
     )
 
     begin {
@@ -94,10 +91,10 @@
 
     process {
         Write-Verbose "Retrieving context info - ID: [$ID] from vault: [$(if ($Vault) { $Vault } else { 'legacy' })]"
-        
+
         # Determine the search path
         if ($Vault) {
-            $searchPath = Join-Path -Path $script:Config.ContextVaultsPath -ChildPath "Vaults" | Join-Path -ChildPath $Vault | Join-Path -ChildPath $script:Config.ContextPath
+            $searchPath = Join-Path -Path $script:Config.RootPath -ChildPath $script:Config.VaultsPath | Join-Path -ChildPath $Vault | Join-Path -ChildPath $script:Config.ContextFolderName
         } else {
             $searchPath = $script:Config.VaultPath
         }

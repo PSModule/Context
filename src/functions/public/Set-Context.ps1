@@ -3,40 +3,35 @@
 function Set-Context {
     <#
         .SYNOPSIS
-        Set a context and store it in the context vault.
+        Set a context and store it in a context vault.
 
         .DESCRIPTION
         If the context does not exist, it will be created. If it already exists, it will be updated.
-        The context is securely stored on disk using encryption mechanisms.
-        Each context operation reads the current state from disk to ensure consistency across processes.
+        The context is encrypted and stored on disk.
+        Each context operation reads the current state from disk to ensure consistency across processes and runspaces.
 
         .EXAMPLE
-        Set-Context -ID 'PSModule.GitHub' -Context @{ Name = 'MySecret' } -Vault "MyModule"
+        Set-Context -ID 'MyUser' -Context @{ Name = 'MyUser' } -Vault 'MyModule'
 
         Output:
         ```powershell
-        ID      : PSModule.GitHub
+        ID      : MyUser
         Path    : C:\Vault\Guid.json
-        Context : @{ Name = 'MySecret' }
+        Context : @{ Name = 'MyUser' }
         ```
 
-        Creates a context called 'MySecret' in the "MyModule" vault.
+        Creates a context called 'MyUser' in the 'MyModule' vault.
 
         .EXAMPLE
-        Set-Context -ID 'PSModule.GitHub' -Context @{ Name = 'MySecret'; AccessToken = '123123123' } -Vault "MyModule"
-
-        Output:
-        ```powershell
-        ID      : PSModule.GitHub
-        Path    : C:\Vault\Guid.json
-        Context : @{ Name = 'MySecret'; AccessToken = '123123123' }
-        ```
-
-        Creates a context called 'MySecret' in the vault with additional settings.
-
-        .EXAMPLE
-        $context = @{ ID = 'MySecret'; Name = 'SomeSecretIHave'; AccessToken = '123123123' }
+        $context = @{ ID = 'MySecret'; Name = 'SomeSecretIHave'; AccessToken = '123123123'|ConvertTo-SecureString -AsPlainText -Force }
         $context | Set-Context
+
+                Output:
+        ```powershell
+        ID      : MyUser
+        Path    : C:\Vault\Guid.json
+        Context : { Name = 'MyUser' }
+        ```
 
         Sets a context using a hashtable object.
 
@@ -89,8 +84,8 @@ function Set-Context {
 
         # Determine the search path and storage path
         if ($Vault) {
-            $searchPath = Join-Path -Path $script:Config.ContextVaultsPath -ChildPath "Vaults" | Join-Path -ChildPath $Vault | Join-Path -ChildPath $script:Config.ContextPath
-            $basePath = Join-Path -Path $script:Config.ContextVaultsPath -ChildPath "Vaults" | Join-Path -ChildPath $Vault | Join-Path -ChildPath $script:Config.ContextPath
+            $searchPath = Join-Path -Path $script:Config.RootPath -ChildPath $script:Config.VaultsPath | Join-Path -ChildPath $Vault | Join-Path -ChildPath $script:Config.ContextFolderName
+            $basePath = Join-Path -Path $script:Config.RootPath -ChildPath $script:Config.VaultsPath | Join-Path -ChildPath $Vault | Join-Path -ChildPath $script:Config.ContextFolderName
         } else {
             $searchPath = $script:Config.VaultPath
             $basePath = $script:Config.VaultPath

@@ -98,10 +98,10 @@
     process {
         foreach ($item in $ID) {
             Write-Verbose "Processing ID [$item] in vault$(if ($Vault) { " [$Vault]" })"
-            
+
             # Determine the search path
             if ($Vault) {
-                $searchPath = Join-Path -Path $script:Config.ContextVaultsPath -ChildPath "Vaults" | Join-Path -ChildPath $Vault | Join-Path -ChildPath $script:Config.ContextPath
+                $searchPath = Join-Path -Path $script:Config.RootPath -ChildPath $script:Config.VaultsPath | Join-Path -ChildPath $Vault | Join-Path -ChildPath $script:Config.ContextFolderName
             } else {
                 $searchPath = $script:Config.VaultPath
             }

@@ -15,24 +15,24 @@ Register-ArgumentCompleter -CommandName ($script:PSModuleInfo.FunctionsToExport)
 }
 
 # Vault name completion for vault functions and context functions
-Register-ArgumentCompleter -CommandName ('New-ContextVault', 'Get-ContextVault', 'Remove-ContextVault', 'Rename-ContextVault', 'Reset-ContextVault') -ParameterName 'Name' -ScriptBlock {
+Register-ArgumentCompleter -CommandName ($script:PSModuleInfo.FunctionsToExport) | Where-Object { $_ -like '*-ContextVault' } -ParameterName 'Name' -ScriptBlock {
     param($commandName, $parameterName, $wordToComplete, $commandAst, $fakeBoundParameter)
     $null = $commandName, $parameterName, $wordToComplete, $commandAst, $fakeBoundParameter
 
     $vaults = Get-ContextVault -ErrorAction SilentlyContinue -Verbose:$false -Debug:$false
     $vaults | Where-Object { $_.Name -like "$wordToComplete*" } | ForEach-Object {
-        [System.Management.Automation.CompletionResult]::new($_.Name, $_.Name, 'ParameterValue', "Vault: $($_.Name) - $($_.Description)")
+        [System.Management.Automation.CompletionResult]::new($_.Name, $_.Name, 'ParameterValue', $_.Name)
     }
 }
 
 # Vault parameter completion for context functions
-Register-ArgumentCompleter -CommandName ('Get-Context', 'Set-Context', 'Remove-Context', 'Rename-Context', 'Get-ContextInfo', 'Move-Context') -ParameterName 'Vault' -ScriptBlock {
+Register-ArgumentCompleter -CommandName ($script:PSModuleInfo.FunctionsToExport) | Where-Object { $_ -like '*-Context' } -ParameterName 'Vault' -ScriptBlock {
     param($commandName, $parameterName, $wordToComplete, $commandAst, $fakeBoundParameter)
     $null = $commandName, $parameterName, $wordToComplete, $commandAst, $fakeBoundParameter
 
     $vaults = Get-ContextVault -ErrorAction SilentlyContinue -Verbose:$false -Debug:$false
     $vaults | Where-Object { $_.Name -like "$wordToComplete*" } | ForEach-Object {
-        [System.Management.Automation.CompletionResult]::new($_.Name, $_.Name, 'ParameterValue', "Vault: $($_.Name) - $($_.Description)")
+        [System.Management.Automation.CompletionResult]::new($_.Name, $_.Name, 'ParameterValue', $_.Name)
     }
 }
 
@@ -54,17 +54,5 @@ Register-ArgumentCompleter -CommandName 'Move-Context' -ParameterName 'TargetVau
     $vaults = Get-ContextVault -ErrorAction SilentlyContinue -Verbose:$false -Debug:$false
     $vaults | Where-Object { $_.Name -like "$wordToComplete*" } | ForEach-Object {
         [System.Management.Automation.CompletionResult]::new($_.Name, $_.Name, 'ParameterValue', "Target Vault: $($_.Name) - $($_.Description)")
-    }
-}
-
-# NewName completion for Rename-ContextVault (exclude existing vault names)
-Register-ArgumentCompleter -CommandName 'Rename-ContextVault' -ParameterName 'NewName' -ScriptBlock {
-    param($commandName, $parameterName, $wordToComplete, $commandAst, $fakeBoundParameter)
-    $null = $commandName, $parameterName, $wordToComplete, $commandAst, $fakeBoundParameter
-
-    # Provide common naming suggestions
-    @('Module1', 'Module2', 'GitHub', 'Azure', 'AWS', 'Production', 'Development', 'Testing') | 
-    Where-Object { $_ -like "$wordToComplete*" } | ForEach-Object {
-        [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', "Suggested vault name")
     }
 }

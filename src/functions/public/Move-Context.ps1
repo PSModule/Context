@@ -65,7 +65,7 @@
 
             if ($PSCmdlet.ShouldProcess("$ID from $SourceVault to $TargetVault", 'Move context')) {
                 Write-Verbose "Moving context [$ID] from vault [$SourceVault] to vault [$TargetVault]"
-                
+
                 # Get the context from the source vault
                 $context = Get-Context -ID $ID -Vault $SourceVault
                 if (-not $context) {
@@ -85,7 +85,7 @@
                 Remove-Context -ID $ID -Vault $SourceVault
 
                 Write-Verbose "Context [$ID] moved successfully from [$SourceVault] to [$TargetVault]"
-                
+
                 return $newContext
             }
         } catch {

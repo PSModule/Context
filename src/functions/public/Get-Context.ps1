@@ -111,10 +111,10 @@ function Get-Context {
 
     process {
         Write-Verbose "Retrieving contexts - ID: [$($ID -join ', ')] from vault: [$(if ($Vault) { $Vault } else { 'legacy' })]"
-        
+
         # Determine the path to search for contexts
         if ($Vault) {
-            $searchPath = Join-Path -Path $script:Config.ContextVaultsPath -ChildPath "Vaults" | Join-Path -ChildPath $Vault | Join-Path -ChildPath $script:Config.ContextPath
+            $searchPath = Join-Path -Path $script:Config.RootPath -ChildPath $script:Config.VaultsPath | Join-Path -ChildPath $Vault | Join-Path -ChildPath $script:Config.ContextFolderName
         } else {
             $searchPath = $script:Config.VaultPath
         }
