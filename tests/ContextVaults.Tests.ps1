@@ -145,11 +145,6 @@ Describe 'ContextVault Management Functions' {
             Set-ContextVault -Name 'reset-test1'
             Set-ContextVault -Name 'reset-test2'
             Set-ContextVault -Name 'reset-other'
-
-            # To properly test reset, we'd need to add content to the vaults
-            # but we don't have full context of how to do that in these tests
-            # So we'll focus on validating that reset operations don't throw
-            # and that the vaults still exist after reset
         }
 
         AfterAll {
