@@ -39,6 +39,9 @@
     begin {
         $stackPath = Get-PSCallStackPath
         Write-Debug "[$stackPath] - Start"
+        if (-not (Test-Path -Path $script:Config.VaultsPath)) {
+            return
+        }
         $vaults = Get-ChildItem $script:Config.VaultsPath -Directory
     }
 

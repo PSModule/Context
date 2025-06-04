@@ -7,8 +7,7 @@ function Set-Context {
 
         .DESCRIPTION
         If the context does not exist, it will be created. If it already exists, it will be updated.
-        The context is encrypted and stored on disk.
-        Each context operation reads the current state from disk to ensure consistency across processes and runspaces.
+        The context is encrypted and stored on disk. Also if the context vault does not exist, it will be created.
 
         .EXAMPLE
         Set-Context -ID 'MyUser' -Context @{ Name = 'MyUser' } -Vault 'MyModule'
@@ -23,10 +22,14 @@ function Set-Context {
         Creates a context called 'MyUser' in the 'MyModule' vault.
 
         .EXAMPLE
-        $context = @{ ID = 'MySecret'; Name = 'SomeSecretIHave'; AccessToken = '123123123'|ConvertTo-SecureString -AsPlainText -Force }
+        $context = @{
+            ID          = 'MySecret'
+            Name        = 'SomeSecretIHave'
+            AccessToken = '123123123'|ConvertTo-SecureString -AsPlainText -Force
+        }
         $context | Set-Context
 
-                Output:
+        Output:
         ```powershell
         ID      : MyUser
         Path    : C:\Vault\Guid.json
