@@ -37,12 +37,14 @@
             <ListControl>
                 <ListEntries>
                     <ListEntry>
-                        <ListItem>
-                            <PropertyName>Name</PropertyName>
-                        </ListItem>
-                        <ListItem>
-                            <PropertyName>Path</PropertyName>
-                        </ListItem>
+                        <ListItems>
+                            <ListItem>
+                                <PropertyName>Name</PropertyName>
+                            </ListItem>
+                            <ListItem>
+                                <PropertyName>Path</PropertyName>
+                            </ListItem>
+                        </ListItems>
                     </ListEntry>
                 </ListEntries>
             </ListControl>
