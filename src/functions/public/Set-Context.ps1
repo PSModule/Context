@@ -85,22 +85,10 @@ function Set-Context {
             throw 'An ID is required, either as a parameter or as a property of the context object.'
         }
 
-        # Determine the search path and storage path
-        if ($Vault) {
-            $searchPath = Join-Path -Path $script:Config.RootPath -ChildPath $script:Config.VaultsPath | Join-Path -ChildPath $Vault | Join-Path -ChildPath $script:Config.ContextFolderName
-            $basePath = Join-Path -Path $script:Config.RootPath -ChildPath $script:Config.VaultsPath | Join-Path -ChildPath $Vault | Join-Path -ChildPath $script:Config.ContextFolderName
-        } else {
-            $searchPath = $script:Config.VaultPath
-            $basePath = $script:Config.VaultPath
-        }
+        $vaultObject = Set-ContextVault -Name $Vault
+        $searchPath = $vaultObject.ContextFolderName
+        $basePath = $vaultObject.ContextFolderName
 
-        # Ensure the directory exists
-        if (-not (Test-Path $searchPath)) {
-            $null = New-Item -Path $searchPath -ItemType Directory -Force
-        }
-
-        $existingContextFile = $null
-        # Check if context already exists by scanning disk files
         $contextFiles = Get-ChildItem -Path $searchPath -Filter *.json -File -Recurse -ErrorAction SilentlyContinue
         foreach ($file in $contextFiles) {
             try {
