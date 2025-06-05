@@ -3,11 +3,11 @@
 function Set-Context {
     <#
         .SYNOPSIS
-        Set a context and store it in a context vault.
+        Set a context in a context vault.
 
         .DESCRIPTION
         If the context does not exist, it will be created. If it already exists, it will be updated.
-        The context is encrypted and stored on disk. Also if the context vault does not exist, it will be created.
+        The context is encrypted and stored on disk. If the context vault does not exist, it will be created.
 
         .EXAMPLE
         Set-Context -ID 'MyUser' -Context @{ Name = 'MyUser' } -Vault 'MyModule'
@@ -25,7 +25,7 @@ function Set-Context {
         $context = @{
             ID          = 'MySecret'
             Name        = 'SomeSecretIHave'
-            AccessToken = '123123123'|ConvertTo-SecureString -AsPlainText -Force
+            AccessToken = '123123123' | ConvertTo-SecureString -AsPlainText -Force
         }
         $context | Set-Context
 
@@ -33,7 +33,11 @@ function Set-Context {
         ```powershell
         ID      : MyUser
         Path    : C:\Vault\Guid.json
-        Context : { Name = 'MyUser' }
+        Context : {
+            ID          = MySecret
+            Name        = MyUser
+            AccessToken = System.Security.SecureString
+        }
         ```
 
         Sets a context using a hashtable object.
@@ -71,6 +75,7 @@ function Set-Context {
     begin {
         $stackPath = Get-PSCallStackPath
         Write-Debug "[$stackPath] - Start"
+        $vaultObject = Set-ContextVault -Name $Vault
     }
 
     process {
@@ -85,44 +90,30 @@ function Set-Context {
             throw 'An ID is required, either as a parameter or as a property of the context object.'
         }
 
-        $vaultObject = Set-ContextVault -Name $Vault
-        $searchPath = $vaultObject.ContextFolderName
-        $basePath = $vaultObject.ContextFolderName
-
-        $contextFiles = Get-ChildItem -Path $searchPath -Filter *.json -File -Recurse -ErrorAction SilentlyContinue
-        foreach ($file in $contextFiles) {
-            try {
-                $contextInfo = Get-Content -Path $file.FullName | ConvertFrom-Json
-                if ($contextInfo.ID -eq $ID) {
-                    $existingContextFile = $file
-                    $Path = $contextInfo.Path
-                    break
-                }
-            } catch {
-                Write-Warning "Failed to read context file: $($file.FullName). Error: $_"
-            }
-        }
-
-        if (-not $existingContextFile) {
-            Write-Verbose "Context [$ID] not found in vault$(if ($Vault) { " [$Vault]" })"
-            $Guid = [Guid]::NewGuid().ToString()
-            $Path = Join-Path -Path $basePath -ChildPath "$Guid.json"
+        $contextInfo = Get-ContextInfo -ID $ID -Vault $Vault
+        if (-not $contextInfo) {
+            Write-Verbose "Context [$ID] not found in vault"
+            $guid = [Guid]::NewGuid().Guid
+            $contextPath = Join-Path -Path $vaultObject.ContextFolderPath -ChildPath "$guid.json"
         } else {
-            Write-Verbose "Context [$ID] found in vault$(if ($Vault) { " [$Vault]" })"
+            Write-Verbose "Context [$ID] found in vault"
+            $contextPath = $contextInfo.Path
         }
 
         $contextJson = ConvertTo-ContextJson -Context $Context -ID $ID
 
+        $keys = Get-ContextVaultKeys -Vault $Vault
+
         $param = [pscustomobject]@{
             ID      = $ID
-            Path    = $Path
-            Context = ConvertTo-SodiumSealedBox -Message $contextJson -PublicKey $script:Config.PublicKey
+            Path    = $contextPath
+            Context = ConvertTo-SodiumSealedBox -Message $contextJson -PublicKey $keys.PublicKey
         } | ConvertTo-Json -Depth 5
         Write-Debug ($param | ConvertTo-Json -Depth 5)
 
         if ($PSCmdlet.ShouldProcess($ID, 'Set context')) {
             Write-Verbose "Setting context [$ID] in vault$(if ($Vault) { " [$Vault]" })"
-            Set-Content -Path $Path -Value $param
+            Set-Content -Path $contextPath -Value $param
         }
 
         if ($PassThru) {

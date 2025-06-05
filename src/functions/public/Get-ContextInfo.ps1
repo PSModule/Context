@@ -62,7 +62,7 @@
         Retrieves all contexts that start with 'My' from the context vault (directly from disk).
 
         .OUTPUTS
-        [System.Object]
+        [PSCustomObject]
 
         .NOTES
         Returns a list of context information matching the specified ID or all contexts if no ID is specified.
@@ -71,7 +71,7 @@
         .LINK
         https://psmodule.io/Context/Functions/Get-ContextInfo/
     #>
-    [OutputType([object])]
+    [OutputType([PSCustomObject])]
     [CmdletBinding()]
     param(
         # The name of the context to retrieve from the vault. Supports wildcards.
@@ -81,7 +81,7 @@
 
         # The name of the vault to retrieve context info from. Supports wildcards.
         [Parameter()]
-        [string] $Vault = '*'
+        [string[]] $Vault = '*'
     )
 
     begin {
@@ -90,35 +90,19 @@
     }
 
     process {
-        Write-Verbose "Retrieving context info - ID: [$ID] from vault: [$(if ($Vault) { $Vault } else { 'legacy' })]"
+        $vaults = Get-ContextVault -Name $Vault -ErrorAction Stop
 
-        # Determine the search path
-        if ($Vault) {
-            $searchPath = Join-Path -Path $script:Config.RootPath -ChildPath $script:Config.VaultsPath | Join-Path -ChildPath $Vault | Join-Path -ChildPath $script:Config.ContextFolderName
-        } else {
-            $searchPath = $script:Config.VaultPath
-        }
-
-        if (-not (Test-Path $searchPath)) {
-            Write-Verbose "Search path does not exist: $searchPath"
-            return
-        }
-
-        foreach ($item in $ID) {
-            # Read context files directly from disk instead of using in-memory cache
-            $contextFiles = Get-ChildItem -Path $searchPath -Filter *.json -File -Recurse
-            foreach ($file in $contextFiles) {
-                try {
-                    $contextInfo = Get-Content -Path $file.FullName | ConvertFrom-Json
-                    if ($contextInfo.ID -like $item) {
-                        # Return only metadata (ID and Path), don't decrypt the Context property
-                        [PSCustomObject]@{
-                            ID   = $contextInfo.ID
-                            Path = $contextInfo.Path
-                        }
+        foreach ($vault in $vaults) {
+            Write-Verbose "Retrieving context info from vault: $($vault.Name)"
+            $contexts = Get-ChildItem -Path $vault.ContextFolderPath -Filter *.json -File -Recurse
+            Write-Verbose "Found $($contexts.Count) context files in vault: $($vault.Name)"
+            foreach ($context in $contexts) {
+                $contextInfo = Get-Content -Path $context.FullName | ConvertFrom-Json
+                if ($contextInfo.ID -like $item) {
+                    [PSCustomObject]@{
+                        ID   = $contextInfo.ID
+                        Path = $contextInfo.Path
                     }
-                } catch {
-                    Write-Warning "Failed to read context file: $($file.FullName). Error: $_"
                 }
             }
         }
