@@ -76,6 +76,8 @@ function Set-Context {
 
     process {
         $vaultObject = Set-ContextVault -Name $Vault
+        Write-Verbose "$($vaultObject | Format-List | Out-String)"
+
         if ($context -is [System.Collections.IDictionary]) {
             $Context = [PSCustomObject]$Context
         }
@@ -88,6 +90,7 @@ function Set-Context {
         }
 
         $contextInfo = Get-ContextInfo -ID $ID -Vault $Vault
+        Write-Verbose "$($contextInfo | Format-List | Out-String)"
         if (-not $contextInfo) {
             Write-Verbose "[$stackPath] - Context [$ID] not found in vault"
             $guid = [Guid]::NewGuid().Guid
