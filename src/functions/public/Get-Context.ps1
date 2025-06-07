@@ -119,7 +119,7 @@ function Get-Context {
                     Write-Warning "Context file does not exist: $($contextInfo.Path)"
                     continue
                 }
-                $keys = Get-ContextVaultKeys -Vault $contextInfo.Vault
+                $keys = Get-ContextVaultKeyPair -Vault $contextInfo.Vault
                 if ($contextInfo.ID -like $item) {
                     # Decrypt and return the context
                     $params = @{

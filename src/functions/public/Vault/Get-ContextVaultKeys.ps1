@@ -1,4 +1,4 @@
-﻿function Get-ContextVaultKeys {
+﻿function Get-ContextVaultKeyPair {
     <#
         .SYNOPSIS
         Retrieves the public and private keys from the context vault.
@@ -8,7 +8,7 @@
         The keys are stored in a secure manner and can be used to encrypt or decrypt contexts.
 
         .EXAMPLE
-        Get-ContextVaultKeys
+        Get-ContextVaultKeyPair
 
         Output:
         ```powershell

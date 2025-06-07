@@ -64,10 +64,6 @@ function Set-Context {
         [Parameter(ValueFromPipeline)]
         [object] $Context = @{},
 
-        # Pass the context through the pipeline.
-        [Parameter()]
-        [switch] $PassThru,
-
         # The name of the vault to store the context in.
         [Parameter(Mandatory)]
         [string] $Vault
@@ -102,7 +98,7 @@ function Set-Context {
         }
 
         $contextJson = ConvertTo-ContextJson -Context $Context -ID $ID
-        $keys = Get-ContextVaultKeys -Vault $Vault
+        $keys = Get-ContextVaultKeyPair -Vault $Vault
         $content = [pscustomobject]@{
             ID      = $ID
             Path    = $contextPath
