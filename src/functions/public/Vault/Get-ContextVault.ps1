@@ -47,7 +47,7 @@
 
     process {
         foreach ($vault in ($vaults | Where-Object { $_.Name -like $vaultName })) {
-            [ContextVault]::new($_.Name, $_.FullName)
+            [ContextVault]::new($vault.Name, $vault.FullName)
         }
     }
 
