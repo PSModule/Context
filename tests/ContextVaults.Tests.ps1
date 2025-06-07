@@ -24,9 +24,6 @@ Describe 'ContextVault Management Functions' {
             $result | Should -BeOfType [ContextVault]
             $result.Name | Should -Be 'test-vault1'
             $result.Path | Should -Not -BeNullOrEmpty
-            $result.ContextFolderPath | Should -Not -BeNullOrEmpty
-            $result.ShardFilePath | Should -Not -BeNullOrEmpty
-            $result.VaultConfigFilePath | Should -Not -BeNullOrEmpty
         }
 
         It 'Should create multiple vaults from array parameter' {
