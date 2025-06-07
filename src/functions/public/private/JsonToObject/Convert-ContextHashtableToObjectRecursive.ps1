@@ -30,7 +30,7 @@
         values are SecureString objects.
 
         .OUTPUTS
-        PSCustomObject.
+        PSCustomObject
 
         .NOTES
         Returns an object where values are converted to their respective types,

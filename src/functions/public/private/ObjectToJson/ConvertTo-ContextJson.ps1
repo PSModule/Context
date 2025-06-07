@@ -26,7 +26,7 @@
         Converts the given object into a JSON string, ensuring SecureStrings are handled properly.
 
         .OUTPUTS
-        System.String.
+        System.String
 
         .NOTES
         A JSON string representation of the provided object, including secure string transformations.

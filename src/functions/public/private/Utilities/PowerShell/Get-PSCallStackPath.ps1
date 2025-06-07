@@ -41,7 +41,7 @@
         Includes the last function (`Get-PSCallStackPath`) in the call stack output.
 
         .OUTPUTS
-        System.String.
+        System.String
 
         .NOTES
         A string representing the call stack path, with function names separated by backslashes.

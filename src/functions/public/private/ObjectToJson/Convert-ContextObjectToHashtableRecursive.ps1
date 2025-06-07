@@ -29,7 +29,7 @@
         Converts the context object to a hashtable. Secure strings are converted to a string representation.
 
         .OUTPUTS
-        hashtable.
+        hashtable
 
         .NOTES
         Returns a hashtable representation of the input object.
