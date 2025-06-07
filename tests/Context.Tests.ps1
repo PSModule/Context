@@ -18,9 +18,9 @@ AfterAll {
 Describe 'Context' {
     Context 'Set-Context' {
         It "Set-Context -ID 'TestID1' -Vault 'VaultA'" {
-            { Set-Context -ID 'TestID1' -Vault 'VaultA' -Debug -Verbose -Confirm:$false } | Should -Not -Throw
+            { Set-Context -ID 'TestID1' -Vault 'VaultA' } | Should -Not -Throw
             $result = Get-Context -ID 'TestID1' -Vault 'VaultA'
-            Write-Verbose ($result | Out-String) -Verbose
+            Write-Host ($result | Out-String)
             $result | Should -Not -BeNullOrEmpty
             $result.ID | Should -Be 'TestID1'
         }
@@ -143,24 +143,24 @@ Describe 'Context' {
 
     Context 'Get-Context' {
         It 'Get-Context - Should return all contexts in VaultA' {
-            Write-Verbose (Get-Context -Vault 'VaultA' | Out-String) -Verbose
+            Write-Host (Get-Context -Vault 'VaultA' | Out-String)
             (Get-Context -Vault 'VaultA').Count | Should -Be 3
         }
         It "Get-Context -ID '*' - Should return all contexts in VaultA" {
-            Write-Verbose (Get-Context -ID '*' -Vault 'VaultA' | Out-String) -Verbose
+            Write-Host (Get-Context -ID '*' -Vault 'VaultA' | Out-String)
             (Get-Context -ID '*' -Vault 'VaultA').Count | Should -Be 3
         }
         It "Get-Context -ID 'TestID*' - Should return all contexts in VaultA" {
-            Write-Verbose (Get-Context -ID 'TestID*' -Vault 'VaultA' | Out-String) -Verbose
+            Write-Host (Get-Context -ID 'TestID*' -Vault 'VaultA' | Out-String)
             (Get-Context -ID 'TestID*' -Vault 'VaultA').Count | Should -Be 2
         }
         It "Get-Context -ID '' - Should return no contexts in VaultA" {
-            Write-Verbose (Get-Context -ID '' -Vault 'VaultA' | Out-String) -Verbose
+            Write-Host (Get-Context -ID '' -Vault 'VaultA' | Out-String)
             { Get-Context -ID '' -Vault 'VaultA' } | Should -Not -Throw
             Get-Context -ID '' -Vault 'VaultA' | Should -BeNullOrEmpty
         }
         It 'Get-Context -ID $null - Should return no contexts in VaultA' {
-            Write-Verbose (Get-Context -ID $null -Vault 'VaultA' | Out-String) -Verbose
+            Write-Host (Get-Context -ID $null -Vault 'VaultA' | Out-String)
             { Get-Context -ID $null -Vault 'VaultA' } | Should -Not -Throw
             Get-Context -ID $null -Vault 'VaultA' | Should -BeNullOrEmpty
         }
@@ -245,8 +245,6 @@ Describe 'Context' {
     Context 'Get-ContextInfo' {
         BeforeAll {
             Get-ContextVault | Remove-ContextVault -Confirm:$false
-            Set-ContextVault -Name 'VaultA'
-            Set-ContextVault -Name 'VaultB'
 
             Set-Context -ID 'TestID1' -Vault 'VaultA'
             Set-Context -ID 'TestID2' -Vault 'VaultA'
@@ -273,20 +271,20 @@ Describe 'Context' {
             $results | ForEach-Object { $_ | Should -BeOfType [PSCustomObject] }
         }
 
-        It "Should return specific context by ID in VaultA" {
+        It 'Should return specific context by ID in VaultA' {
             $result = Get-ContextInfo -ID 'TestID1' -Vault 'VaultA'
             $result | Should -Not -BeNullOrEmpty
             $result.ID | Should -Be 'TestID1'
         }
 
-        It "Should return multiple contexts matching wildcard ID in VaultA" {
+        It 'Should return multiple contexts matching wildcard ID in VaultA' {
             $results = Get-ContextInfo -ID 'TestID*' -Vault 'VaultA'
             $results | Should -HaveCount 2
             $results.ID | Should -Contain 'TestID1'
             $results.ID | Should -Contain 'TestID2'
         }
 
-        It "Should return no results for non-existent context ID in VaultA" {
+        It 'Should return no results for non-existent context ID in VaultA' {
             $result = Get-ContextInfo -ID 'NonExistentContext' -Vault 'VaultA'
             $result | Should -BeNullOrEmpty
         }
