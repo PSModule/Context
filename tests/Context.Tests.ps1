@@ -7,8 +7,8 @@ param()
 BeforeAll {
     Get-ContextVault | Remove-ContextVault -Confirm:$false
     # Create two vaults for multi-vault tests
-    Set-ContextVault -Name 'VaultA' | Out-Null
-    Set-ContextVault -Name 'VaultB' | Out-Null
+    Set-ContextVault -Name 'VaultA'
+    Set-ContextVault -Name 'VaultB'
 }
 
 AfterAll {
