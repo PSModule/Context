@@ -95,8 +95,8 @@
         }
         Write-Debug "[$stackPath] - Found $($vaults.Count) vault(s) matching '$($Vault -join ', ')'."
 
-        $files = foreach ($vault in $vaults) {
-            Get-ChildItem -Path $vault.Path -Filter *.json -File
+        $files = foreach ($vaultObject in $vaults) {
+            Get-ChildItem -Path $vaultObject.Path -Filter *.json -File
         }
         Write-Debug "[$stackPath] - Found $($files.Count) context file(s) in vault(s)."
 
