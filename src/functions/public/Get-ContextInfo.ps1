@@ -99,7 +99,7 @@
             foreach ($context in $contexts) {
                 $contextInfo = Get-Content -Path $context.FullName | ConvertFrom-Json
                 if ($ID | Where-Object { $contextInfo.ID -like $_ }) {
-                    $contextInfo | Select-Object -Property ID, Path
+                    $contextInfo
                 }
             }
         }

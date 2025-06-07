@@ -52,7 +52,8 @@ function Set-Context {
         .LINK
         https://psmodule.io/Context/Functions/Set-Context/
     #>
-    [OutputType([object])]
+    [Alias('New-Context', 'Update-Context')]
+    [OutputType([PSCustomObject])]
     [CmdletBinding(SupportsShouldProcess)]
     param(
         # The ID of the context.
@@ -101,24 +102,22 @@ function Set-Context {
         }
 
         $contextJson = ConvertTo-ContextJson -Context $Context -ID $ID
-
         $keys = Get-ContextVaultKeys -Vault $Vault
 
-        $param = [pscustomobject]@{
+        $content = [pscustomobject]@{
             ID      = $ID
             Path    = $contextPath
+            Vault   = $Vault
             Context = ConvertTo-SodiumSealedBox -Message $contextJson -PublicKey $keys.PublicKey
         } | ConvertTo-Json -Depth 5
-        Write-Debug ($param | ConvertTo-Json -Depth 5)
+        Write-Debug ($content | ConvertTo-Json -Depth 5)
 
-        if ($PSCmdlet.ShouldProcess($ID, 'Set context')) {
-            Write-Verbose "Setting context [$ID] in vault$(if ($Vault) { " [$Vault]" })"
-            Set-Content -Path $contextPath -Value $param
+        if ($PSCmdlet.ShouldProcess("file: [$contextPath]", 'Set content')) {
+            Write-Verbose "Setting context [$ID] in vault [$Vault]"
+            Set-Content -Path $contextPath -Value $content
         }
 
-        if ($PassThru) {
-            Get-Context -ID $ID -Vault $Vault
-        }
+        Get-Context -ID $ID -Vault $Vault
     }
 
     end {

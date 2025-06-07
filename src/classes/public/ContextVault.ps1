@@ -19,4 +19,8 @@
         $this.ShardFilePath = $shardFilePath
         $this.VaultConfigFilePath = $vaultConfigFilePath
     }
+
+    [string] ToString() {
+        return $this.Name
+    }
 }

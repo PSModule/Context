@@ -96,36 +96,14 @@
     }
 
     process {
-        foreach ($item in $ID) {
-            Write-Verbose "Processing ID [$item] in vault$(if ($Vault) { " [$Vault]" })"
+        $contextInfo = Get-ContextInfo -ID $ID -Vault $Vault
+        foreach ($contextInfo in $contextInfo) {
+            $contextId = $contextInfo.ID
 
-            # Determine the search path
-            if ($Vault) {
-                $searchPath = Join-Path -Path $script:Config.RootPath -ChildPath $script:Config.VaultsPath | Join-Path -ChildPath $Vault | Join-Path -ChildPath $script:Config.ContextFolderName
-            } else {
-                $searchPath = $script:Config.VaultPath
-            }
-
-            if (-not (Test-Path $searchPath)) {
-                Write-Verbose "Search path does not exist: $searchPath"
-                continue
-            }
-
-            # Find contexts by scanning disk files instead of using in-memory cache
-            $contextFiles = Get-ChildItem -Path $searchPath -Filter *.json -File -Recurse
-            foreach ($file in $contextFiles) {
-                try {
-                    $contextInfo = Get-Content -Path $file.FullName | ConvertFrom-Json
-                    if ($contextInfo.ID -like $item) {
-                        Write-Verbose "Removing context [$($contextInfo.ID)]"
-                        if ($PSCmdlet.ShouldProcess($contextInfo.ID, 'Remove secret')) {
-                            $file.FullName | Remove-Item -Force
-                            Write-Verbose "Removed context file: $($file.FullName)"
-                        }
-                    }
-                } catch {
-                    Write-Warning "Failed to read context file: $($file.FullName). Error: $_"
-                }
+            if ($PSCmdlet.ShouldProcess("Context '$contextId'", "Remove")) {
+                Write-Debug "[$stackPath] - Removing context [$contextId]"
+                $contextInfo.Path | Remove-Item -Force -ErrorAction Stop
+                Write-Output "Removed item: $contextId"
             }
         }
     }

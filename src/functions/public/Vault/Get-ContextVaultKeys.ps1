@@ -22,7 +22,7 @@
     [CmdletBinding()]
     param(
         # The name of the vault to retrieve the keys from.
-        [Parameter()]
+        [Parameter(Mandatory)]
         [string] $Vault
     )
 

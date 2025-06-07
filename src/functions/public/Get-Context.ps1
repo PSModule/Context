@@ -107,27 +107,31 @@ function Get-Context {
     begin {
         $stackPath = Get-PSCallStackPath
         Write-Debug "[$stackPath] - Start"
-        $vaultObject = Set-ContextVault -Name $Vault
     }
 
     process {
         $contextInfos = Get-ContextInfo -ID $ID -Vault $Vault -ErrorAction Stop
         foreach ($contextInfo in $contextInfos) {
-            Write-Verbose "Retrieving contexts - ID: [$($ID -join ', ')]"
+            Write-Verbose "Retrieving context - ID: [$($contextInfo.ID)], Vault: [$($contextInfo.Vault)]"
+            $shardPath
             try {
-                $contextInfo = Get-Content -Path $file.FullName | ConvertFrom-Json
+                if (-not (Test-Path -Path $contextInfo.Path)) {
+                    Write-Warning "Context file does not exist: $($contextInfo.Path)"
+                    continue
+                }
+                $keys = Get-ContextVaultKeys -Vault $contextInfo.Vault
                 if ($contextInfo.ID -like $item) {
                     # Decrypt and return the context
                     $params = @{
                         SealedBox  = $contextInfo.Context
-                        PublicKey  = $script:Config.PublicKey
-                        PrivateKey = $script:Config.PrivateKey
+                        PublicKey  = $keys.PublicKey
+                        PrivateKey = $keys.PrivateKey
                     }
                     $contextObj = ConvertFrom-SodiumSealedBox @params
                     ConvertFrom-ContextJson -JsonString $contextObj
                 }
             } catch {
-                Write-Warning "Failed to read or decrypt context file: $($file.FullName). Error: $_"
+                Write-Warning "Failed to read or decrypt context file: $($contextInfo.Path). Error: $_"
             }
         }
     }
