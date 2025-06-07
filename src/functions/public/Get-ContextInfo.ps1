@@ -103,8 +103,9 @@
         foreach ($file in $files) {
             Write-Debug "[$stackPath] - Processing file: $($file.FullName)"
             $contextInfo = Get-Content -Path $file.FullName | ConvertFrom-Json
+            $contextInfo | Format-List | Out-String -Stream | ForEach-Object { Write-Debug "[$stackPath] - $_" }
             if ($ID | Where-Object { $contextInfo.ID -like $_ }) {
-                $contextInfo
+                Write-Output $contextInfo
             }
         }
     }
