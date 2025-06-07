@@ -241,4 +241,54 @@ Describe 'Context' {
             { Rename-Context -ID 'TestContext' -NewID $existingID -Vault 'VaultA' -Force } | Should -Not -Throw
         }
     }
+
+    Context 'Get-ContextInfo' {
+        BeforeAll {
+            Get-ContextVault | Remove-ContextVault -Confirm:$false
+            Set-ContextVault -Name 'VaultA'
+            Set-ContextVault -Name 'VaultB'
+
+            Set-Context -ID 'TestID1' -Vault 'VaultA'
+            Set-Context -ID 'TestID2' -Vault 'VaultA'
+            Set-Context -ID 'TestID3' -Vault 'VaultA'
+            Set-Context -ID 'TestID1' -Vault 'VaultB'
+            Set-Context -ID 'TestID2' -Vault 'VaultB'
+        }
+
+        AfterAll {
+            Get-ContextVault | Remove-ContextVault -Confirm:$false
+        }
+
+        It 'Should return all contexts' {
+            $results = Get-ContextInfo
+            $results | Should -Not -BeNullOrEmpty
+            $results | Should -HaveCount 5
+            $results | ForEach-Object { $_ | Should -BeOfType [PSCustomObject] }
+        }
+
+        It 'Should return all contexts in VaultA' {
+            $results = Get-ContextInfo -Vault 'VaultA'
+            $results | Should -Not -BeNullOrEmpty
+            $results | Should -HaveCount 3
+            $results | ForEach-Object { $_ | Should -BeOfType [PSCustomObject] }
+        }
+
+        It "Should return specific context by ID in VaultA" {
+            $result = Get-ContextInfo -ID 'TestID1' -Vault 'VaultA'
+            $result | Should -Not -BeNullOrEmpty
+            $result.ID | Should -Be 'TestID1'
+        }
+
+        It "Should return multiple contexts matching wildcard ID in VaultA" {
+            $results = Get-ContextInfo -ID 'TestID*' -Vault 'VaultA'
+            $results | Should -HaveCount 2
+            $results.ID | Should -Contain 'TestID1'
+            $results.ID | Should -Contain 'TestID2'
+        }
+
+        It "Should return no results for non-existent context ID in VaultA" {
+            $result = Get-ContextInfo -ID 'NonExistentContext' -Vault 'VaultA'
+            $result | Should -BeNullOrEmpty
+        }
+    }
 }
