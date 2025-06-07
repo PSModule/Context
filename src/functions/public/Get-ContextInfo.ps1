@@ -100,12 +100,11 @@
         }
         Write-Debug "[$stackPath] - Found $($files.Count) context file(s) in vault(s)."
 
-        $contextInfos = $files | Get-Content -Path $_.FullName | ConvertFrom-Json
-        Write-Debug "[$stackPath] - Converted context files to JSON objects."
-
-        foreach ($context in $contextInfos) {
-            if ($ID | Where-Object { $context.ID -like $_ }) {
-                $context
+        foreach ($file in $files) {
+            Write-Debug "[$stackPath] - Processing file: $($file.FullName)"
+            $contextInfo = Get-Content -Path $file.FullName | ConvertFrom-Json
+            if ($ID | Where-Object { $contextInfo.ID -like $_ }) {
+                $contextInfo
             }
         }
     }
