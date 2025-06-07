@@ -85,26 +85,35 @@
     )
 
     begin {
-        $stackPath = Get-PSCallStackPath
-        Write-Debug "[$stackPath] - Start"
+        $debug = $DebugPreference -eq 'Continue'
+        if ($debug) {
+            $stackPath = Get-PSCallStackPath
+            Write-Debug "[$stackPath] - Start"
+        }
     }
 
     process {
         $vaults = foreach ($vaultName in $Vault) {
             Get-ContextVault -Name $vaultName -ErrorAction Stop
         }
-        Write-Debug "[$stackPath] - Found $($vaults.Count) vault(s) matching '$($Vault -join ', ')'."
+        if ($debug) {
+            Write-Debug "[$stackPath] - Found $($vaults.Count) vault(s) matching '$($Vault -join ', ')'."
+        }
 
         $files = foreach ($vaultObject in $vaults) {
             Get-ChildItem -Path $vaultObject.Path -Filter *.json -File
         }
-        Write-Debug "[$stackPath] - Found $($files.Count) context file(s) in vault(s)."
+        if ($debug) {
+            Write-Debug "[$stackPath] - Found $($files.Count) context file(s) in vault(s)."
+        }
 
         foreach ($file in $files) {
-            Write-Debug "[$stackPath] - Processing file: $($file.FullName)"
             $contextInfo = Get-Content -Path $file.FullName | ConvertFrom-Json
-            $contextInfo | Format-List | Out-String -Stream | ForEach-Object { Write-Debug "[$stackPath] - $_" }
-            if ($ID | Where-Object { $contextInfo.ID -like $_ }) {
+            if ($debug) {
+                Write-Debug "[$stackPath] - Processing file: $($file.FullName)"
+                $contextInfo | Format-List | Out-String -Stream | ForEach-Object { Write-Debug "[$stackPath] - $_" }
+            }
+            if ($contextInfo.ID -like $ID) {
                 Write-Output $contextInfo
             }
         }
