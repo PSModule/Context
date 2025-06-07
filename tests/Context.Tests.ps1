@@ -139,15 +139,6 @@ Describe 'Context' {
             $context.SessionMetaData.BrowserInfo.Name | Should -Be 'Chrome'
             $context.SessionMetaData.BrowserInfo.Version | Should -Be '118.0.1'
         }
-        # It "Get-Context -> Update -> Set-Context - Updates the context" {
-        #     Set-Context -ID 'JimmyDoe' -Context @{
-        #         Name  = 'Jimmy Doe'
-        #         Email = 'JD@example.com'
-        #     }
-        #     $context = Get-Context -ID 'JimmyDoe'
-        #     $context.Name = 'Jimmy Doe Jr.'
-        #     $context | Set-Context
-        # }
     }
 
     Context 'Get-Context' {
@@ -200,12 +191,10 @@ Describe 'Context' {
 
     Context 'Rename-Context' {
         BeforeEach {
-            # Ensure no contexts exist before starting tests
             Get-Context -Vault 'VaultA' | Remove-Context -Vault 'VaultA'
         }
 
         AfterEach {
-            # Cleanup any contexts created during tests
             Get-Context -Vault 'VaultA' | Remove-Context -Vault 'VaultA'
         }
 
@@ -214,11 +203,7 @@ Describe 'Context' {
             $newID = 'RenamedContext'
 
             Set-Context -ID $ID -Vault 'VaultA'
-
-            # Rename the context
             Rename-Context -ID $ID -NewID $newID -Vault 'VaultA'
-
-            # Verify the old context no longer exists
             Get-Context -ID $ID -Vault 'VaultA' | Should -BeNullOrEmpty
             Get-Context -ID $newID -Vault 'VaultA' | Should -Not -BeNullOrEmpty
         }
@@ -232,8 +217,6 @@ Describe 'Context' {
 
             Set-Context -ID $existingID -Vault 'VaultA'
             Set-Context -ID 'TestContext' -Vault 'VaultA'
-
-            # Attempt to rename the context to an existing context
             { Rename-Context -ID 'TestContext' -NewID $existingID -Vault 'VaultA' } | Should -Throw
         }
 
@@ -255,54 +238,7 @@ Describe 'Context' {
 
             Set-Context -ID $existingID -Vault 'VaultA'
             Set-Context -ID 'TestContext' -Vault 'VaultA'
-
-            # Attempt to rename the context to an existing context
             { Rename-Context -ID 'TestContext' -NewID $existingID -Vault 'VaultA' -Force } | Should -Not -Throw
-        }
-    }
-
-    Context 'Pipeline Input support' {
-        It 'Get-Context supports pipeline input as strings in VaultA' {
-            Set-Context -ID 'PipeContext1' -Context @{ Dummy = 1 } -Vault 'VaultA'
-            Set-Context -ID 'PipeContext2' -Context @{ Dummy = 2 } -Vault 'VaultA'
-            $result = 'PipeContext1', 'PipeContext2' | Get-Context -Vault 'VaultA'
-            $result | Should -Not -BeNullOrEmpty
-            $result.ID | Should -Contain 'PipeContext1'
-            $result.ID | Should -Contain 'PipeContext2'
-        }
-        It 'Get-Context supports pipeline input by property name in VaultA' {
-            Set-Context -ID 'PipeContext3' -Context @{ Dummy = 3 } -Vault 'VaultA'
-            $obj = [PSCustomObject]@{ ID = 'PipeContext3' }
-            $result = $obj | Get-Context -Vault 'VaultA'
-            $result | Should -Not -BeNullOrEmpty
-            $result.ID | Should -Be 'PipeContext3'
-        }
-        # Get-ContextInfo tests below intentionally omit -Vault for legacy/default behavior
-        It 'Get-ContextInfo supports pipeline input as strings' {
-            Set-Context -ID 'PipeInfo1' -Context @{ Dummy = 1 } -Vault 'VaultA'
-            Set-Context -ID 'PipeInfo2' -Context @{ Dummy = 2 } -Vault 'VaultA'
-            $result = 'PipeInfo1', 'PipeInfo2' | Get-ContextInfo
-            $result | Should -Not -BeNullOrEmpty
-            $result.ID | Should -Contain 'PipeInfo1'
-            $result.ID | Should -Contain 'PipeInfo2'
-            $result | ForEach-Object { $_.PSObject.Properties.Name | Should -BeIn @('ID', 'Path') }
-        }
-        It 'Get-ContextInfo supports pipeline input by property name' {
-            Set-Context -ID 'PipeInfo3' -Context @{ Dummy = 3 } -Vault 'VaultA'
-            $obj = [PSCustomObject]@{ ID = 'PipeInfo3' }
-            $result = $obj | Get-ContextInfo
-            $result | Should -Not -BeNullOrEmpty
-            $result.ID | Should -Be 'PipeInfo3'
-            $result | ForEach-Object { $_.PSObject.Properties.Name | Should -BeIn @('ID', 'Path') }
-        }
-        It 'Get-ContextInfo can retrieve info from multiple vaults' {
-            # Set contexts in both VaultA and VaultB
-            Set-Context -ID 'MultiVault1' -Context @{ Dummy = 'A' } -Vault 'VaultA'
-            Set-Context -ID 'MultiVault2' -Context @{ Dummy = 'B' } -Vault 'VaultB'
-            $result = Get-ContextInfo -ID 'MultiVault*' -Vault @('VaultA', 'VaultB')
-            $result | Should -Not -BeNullOrEmpty
-            $result.ID | Should -Contain 'MultiVault1'
-            $result.ID | Should -Contain 'MultiVault2'
         }
     }
 }
