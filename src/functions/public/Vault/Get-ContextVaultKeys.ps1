@@ -29,15 +29,16 @@
     begin {
         $stackPath = Get-PSCallStackPath
         Write-Debug "[$stackPath] - Start"
-        $vaultObject = Set-ContextVault -Name $Vault
     }
 
     process {
-        $seedShard = Get-Content -Path $vaultObject.ShardFilePath
+        $vaultObject = Set-ContextVault -Name $Vault
+        $shardPath = Join-Path -Path $vaultObject.Path -ChildPath $script:ShardFileName
+        $fileShard = Get-Content -Path $shardPath
         $machineShard = [System.Environment]::MachineName
         $userShard = [System.Environment]::UserName
         #$userInputShard = Read-Host -Prompt 'Enter a seed shard' # Eventually 4 shards. +1 for user input.
-        $seed = $machineShard + $userShard + $seedShard # + $userInputShard
+        $seed = $machineShard + $userShard + $fileShard # + $userInputShard
         $keys = New-SodiumKeyPair -Seed $seed
         $keys
     }

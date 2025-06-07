@@ -18,37 +18,36 @@
     [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'High')]
     param(
         # The name of the vault to remove.
-        [Parameter(ValueFromPipeline, ValueFromPipelineByPropertyName, ParameterSetName = 'By Name')]
+        [Parameter(Mandatory, ValueFromPipeline, ValueFromPipelineByPropertyName, ParameterSetName = 'By Name')]
         [SupportsWildcards()]
-        [string[]] $Name = '*',
+        [string[]] $Name,
 
         # The vault object to remove.
         [Parameter(Mandatory, ValueFromPipeline, ParameterSetName = 'As ContextVault')]
-        [ContextVault[]] $Vault
+        [ContextVault[]] $InputObject
     )
 
     begin {
         $stackPath = Get-PSCallStackPath
         Write-Debug "[$stackPath] - Start"
+        $vaults = Get-ContextVault
     }
 
     process {
         switch ($PSCmdlet.ParameterSetName) {
             'By Name' {
                 foreach ($vaultName in $Name) {
-                    $vaults = Get-ContextVault -Name $vaultName
-
-                    foreach ($vaultItem in $vaults) {
-                        Write-Verbose "Removing ContextVault [$($vaultItem.Name)] at path [$($vaultItem.Path)]"
-                        if ($PSCmdlet.ShouldProcess("ContextVault: [$($vaultItem.Name)]", 'Remove')) {
-                            Remove-Item -Path $vaultItem.Path -Recurse -Force
-                            Write-Verbose "ContextVault [$($vaultItem.Name)] removed successfully."
+                    foreach ($vault in ($vaults | Where-Object { $_.Name -like $vaultName })) {
+                        Write-Verbose "Removing ContextVault [$($vault.Name)] at path [$($vault.Path)]"
+                        if ($PSCmdlet.ShouldProcess("ContextVault: [$($vault.Name)]", 'Remove')) {
+                            Remove-Item -Path $vault.Path -Recurse -Force
+                            Write-Verbose "ContextVault [$($vault.Name)] removed successfully."
                         }
                     }
                 }
             }
             'As ContextVault' {
-                $Vault.Name | Remove-ContextVault
+                $InputObject.Name | Remove-ContextVault
             }
         }
     }

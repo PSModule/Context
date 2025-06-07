@@ -39,21 +39,15 @@
     begin {
         $stackPath = Get-PSCallStackPath
         Write-Debug "[$stackPath] - Start"
-        if (-not (Test-Path -Path $script:Config.VaultsPath)) {
+        if (-not (Test-Path -Path $script:Config.RootPath)) {
             return
         }
-        $vaults = Get-ChildItem $script:Config.VaultsPath -Directory
+        $vaults = Get-ChildItem $script:Config.RootPath -Directory
     }
 
     process {
-        if ($vaults.Count -eq 0) {
-            return
-        }
-        foreach ($vaultName in $Name) {
-            $vaults | Where-Object { $_.Name -like $vaultName } | ForEach-Object {
-                $info = Get-ContextVaultInfo -Name $_.Name
-                [ContextVault]::new($_.Name, $_.FullName, $info.ContextFolderPath, $info.ShardFilePath, $info.VaultConfigFilePath)
-            }
+        foreach ($vault in ($vaults | Where-Object { $_.Name -like $vaultName })) {
+            [ContextVault]::new($_.Name, $_.FullName)
         }
     }
 

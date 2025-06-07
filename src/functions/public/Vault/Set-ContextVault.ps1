@@ -35,26 +35,23 @@ function Set-ContextVault {
     process {
         foreach ($vaultName in $Name) {
             Write-Verbose "Processing vault: $vaultName"
-            $vault = Get-ContextVaultInfo -Name $vaultName
 
-            if ($PSCmdlet.ShouldProcess($vault.Name, 'Set context vault configuration')) {
-                if (-not (Test-Path $vault.VaultPath)) {
-                    Write-Verbose "Creating new vault [$($vault.Name)]"
-                    $null = New-Item -Path $vault.VaultPath -ItemType Directory -Force
+            $vaultPath = Join-Path -Path $script:Config.RootPath -ChildPath $vaultName
+            if (-not (Test-Path $vaultPath)) {
+                Write-Verbose "Creating new vault [$($vault.Name)]"
+                if ($PSCmdlet.ShouldProcess("context vault folder $vaultName", 'Set')) {
+                    $null = New-Item -Path $vaultPath -ItemType Directory -Force
                 }
-                # Ensure context directory exists
-                if (-not (Test-Path $vault.ContextFolderPath)) {
-                    $null = New-Item -Path $vault.ContextFolderPath -ItemType Directory -Force
-                }
-
-                if (-not (Test-Path $vault.ShardFilePath)) {
-                    Write-Verbose "Generating encryption keys for vault [$($vault.Name)]"
-                    $seedShardContent = [System.Guid]::NewGuid().ToString()
-                    Set-Content -Path $vault.ShardFilePath -Value $seedShardContent
-                }
-
-                [ContextVault]::new($vault.Name, $vault.VaultPath, $vault.ContextFolderPath, $vault.ShardFilePath, $vault.VaultConfigFilePath)
             }
+            $fileShardPath = Join-Path -Path $vaultPath -ChildPath $script:Config.ShardFileName
+            if (-not (Test-Path $fileShardPath)) {
+                Write-Verbose "Generating encryption keys for vault [$($vault.Name)]"
+                if ($PSCmdlet.ShouldProcess("shard file $fileShardPath", 'Set')) {
+                    Set-Content -Path $fileShardPath -Value ([System.Guid]::NewGuid().ToString())
+                }
+            }
+
+            [ContextVault]::new($vaultName, $vaultPath)
         }
     }
 

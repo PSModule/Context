@@ -28,7 +28,7 @@
 
         # The vault object to reset.
         [Parameter(Mandatory, ValueFromPipeline, ParameterSetName = 'As ContextVault')]
-        [ContextVault[]] $Vault
+        [ContextVault[]] $InputObject
     )
 
     begin {
@@ -40,23 +40,20 @@
         switch ($PSCmdlet.ParameterSetName) {
             'By Name' {
                 foreach ($vaultName in $Name) {
-                    $vaults = Get-ContextVault -Name $vaultName
-
-                    foreach ($vaultItem in $vaults) {
-                        if ($PSCmdlet.ShouldProcess("ContextVault: [$($vaultItem.Name)]", 'Reset')) {
-                            Write-Verbose "Resetting ContextVault [$($vaultItem.Name)] at path [$($vaultItem.Path)]"
-                            Remove-ContextVault -Name $($vaultItem.Name) -Confirm:$false
-                            Set-ContextVault -Name $($vaultItem.Name)
-                            Write-Verbose "ContextVault [$($vaultItem.Name)] reset successfully."
+                    foreach ($vault in ($vaults | Where-Object { $_.Name -like $vaultName })) {
+                        Write-Verbose "Resetting ContextVault [$($vault.Name)] at path [$($vault.Path)]"
+                        if ($PSCmdlet.ShouldProcess("ContextVault: [$($vault.Name)]", 'Reset')) {
+                            Remove-ContextVault -Name $($vault.Name) -Confirm:$false
+                            Set-ContextVault -Name $($vault.Name)
+                            Write-Verbose "ContextVault [$($vault.Name)] reset successfully."
                         }
                     }
                 }
             }
             'As ContextVault' {
-                $Vault.Name | Reset-ContextVault
+                $InputObject.Name | Reset-ContextVault
             }
         }
-
     }
 
     end {
