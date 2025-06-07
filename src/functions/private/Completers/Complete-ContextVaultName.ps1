@@ -6,7 +6,14 @@
         .DESCRIPTION
         Provides tab completion for Context Vault names.
     #>
-    param($commandName, $parameterName, $wordToComplete, $commandAst, $fakeBoundParameter)
+    [CmdletBinding()]
+    param(
+        $commandName,
+        $parameterName,
+        $wordToComplete,
+        $commandAst,
+        $fakeBoundParameter
+    )
     $null = $commandName, $parameterName, $wordToComplete, $commandAst, $fakeBoundParameter
 
     $vaults = Get-ContextVault -ErrorAction SilentlyContinue -Verbose:$false -Debug:$false
