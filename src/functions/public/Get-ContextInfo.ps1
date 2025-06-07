@@ -111,10 +111,10 @@
             $contextInfo = Get-Content -Path $file.FullName | ConvertFrom-Json
             if ($debug) {
                 Write-Debug "[$stackPath] - Processing file: $($file.FullName)"
-                $contextInfo | Format-List | Out-String -Stream | ForEach-Object { Write-Debug "[$stackPath] - $_" }
+                $contextInfo | Format-List | Out-String -Stream | ForEach-Object { Write-Debug "[$stackPath]   $_" }
             }
             if ($contextInfo.ID -like $ID) {
-                Write-Output $contextInfo
+                $contextInfo
             }
         }
     }

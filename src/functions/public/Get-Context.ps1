@@ -47,17 +47,17 @@ function Get-Context {
         Retrieves all contexts from the context vault (directly from disk).
 
         .EXAMPLE
-        Get-Context -Vault "MyModule"
+        Get-Context -Vault 'MyModule'
 
-        Retrieves all contexts from the "MyModule" vault.
-
-        .EXAMPLE
-        Get-Context -ID 'MySecret' -Vault "MyModule"
-
-        Retrieves the context called 'MySecret' from the "MyModule" vault.
+        Retrieves all contexts from the 'MyModule' vault.
 
         .EXAMPLE
-        'My*' | Get-Context -Vault "MyModule"
+        Get-Context -ID 'MySecret' -Vault 'MyModule'
+
+        Retrieves the context called 'MySecret' from the 'MyModule' vault.
+
+        .EXAMPLE
+        'My*' | Get-Context -Vault 'MyModule'
 
         Output:
         ```powershell
@@ -113,23 +113,19 @@ function Get-Context {
         $contextInfos = Get-ContextInfo -ID $ID -Vault $Vault -ErrorAction Stop
         foreach ($contextInfo in $contextInfos) {
             Write-Verbose "Retrieving context - ID: [$($contextInfo.ID)], Vault: [$($contextInfo.Vault)]"
-            $shardPath
             try {
                 if (-not (Test-Path -Path $contextInfo.Path)) {
                     Write-Warning "Context file does not exist: $($contextInfo.Path)"
                     continue
                 }
                 $keys = Get-ContextVaultKeyPair -Vault $contextInfo.Vault
-                if ($contextInfo.ID -like $item) {
-                    # Decrypt and return the context
-                    $params = @{
-                        SealedBox  = $contextInfo.Context
-                        PublicKey  = $keys.PublicKey
-                        PrivateKey = $keys.PrivateKey
-                    }
-                    $contextObj = ConvertFrom-SodiumSealedBox @params
-                    ConvertFrom-ContextJson -JsonString $contextObj
+                $params = @{
+                    SealedBox  = $contextInfo.Context
+                    PublicKey  = $keys.PublicKey
+                    PrivateKey = $keys.PrivateKey
                 }
+                $contextObj = ConvertFrom-SodiumSealedBox @params
+                ConvertFrom-ContextJson -JsonString $contextObj
             } catch {
                 Write-Warning "Failed to read or decrypt context file: $($contextInfo.Path). Error: $_"
             }
