@@ -98,11 +98,8 @@
             Write-Verbose "Found $($contexts.Count) context files in vault: $($vault.Name)"
             foreach ($context in $contexts) {
                 $contextInfo = Get-Content -Path $context.FullName | ConvertFrom-Json
-                if ($contextInfo.ID -like $item) {
-                    [PSCustomObject]@{
-                        ID   = $contextInfo.ID
-                        Path = $contextInfo.Path
-                    }
+                if ($ID | Where-Object { $contextInfo.ID -like $_ }) {
+                    $contextInfo | Select-Object -Property ID, Path
                 }
             }
         }
