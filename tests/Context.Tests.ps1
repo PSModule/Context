@@ -18,7 +18,7 @@ AfterAll {
 Describe 'Context' {
     Context 'Set-Context' {
         It "Set-Context -ID 'TestID1' -Vault 'VaultA'" {
-            { Set-Context -ID 'TestID1' -Vault 'VaultA' } | Should -Not -Throw
+            { Set-Context -ID 'TestID1' -Vault 'VaultA' -Debug } | Should -Not -Throw
             $result = Get-Context -ID 'TestID1' -Vault 'VaultA'
             Write-Verbose ($result | Out-String) -Verbose
             $result | Should -Not -BeNullOrEmpty
