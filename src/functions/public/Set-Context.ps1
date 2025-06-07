@@ -72,10 +72,10 @@ function Set-Context {
     begin {
         $stackPath = Get-PSCallStackPath
         Write-Debug "[$stackPath] - Start"
-        $vaultObject = Set-ContextVault -Name $Vault
     }
 
     process {
+        $vaultObject = Set-ContextVault -Name $Vault
         if ($context -is [System.Collections.IDictionary]) {
             $Context = [PSCustomObject]$Context
         }
@@ -89,13 +89,14 @@ function Set-Context {
 
         $contextInfo = Get-ContextInfo -ID $ID -Vault $Vault
         if (-not $contextInfo) {
-            Write-Verbose "Context [$ID] not found in vault"
+            Write-Verbose "[$stackPath] - Context [$ID] not found in vault"
             $guid = [Guid]::NewGuid().Guid
             $contextPath = Join-Path -Path $vaultObject.Path -ChildPath "$guid.json"
         } else {
-            Write-Verbose "Context [$ID] found in vault"
+            Write-Verbose "[$stackPath] - Context [$ID] found in vault"
             $contextPath = $contextInfo.Path
         }
+        Write-Verbose "[$stackPath] - Context path: [$contextPath]"
 
         $contextJson = ConvertTo-ContextJson -Context $Context -ID $ID
         $keys = Get-ContextVaultKeyPair -Vault $Vault
@@ -105,10 +106,10 @@ function Set-Context {
             Vault   = $Vault
             Context = ConvertTo-SodiumSealedBox -Message $contextJson -PublicKey $keys.PublicKey
         } | ConvertTo-Json -Depth 5
-        Write-Debug ($content | ConvertTo-Json -Depth 5)
+        Write-Verbose ($content | ConvertTo-Json -Depth 5)
 
         if ($PSCmdlet.ShouldProcess("file: [$contextPath]", 'Set content')) {
-            Write-Verbose "Setting context [$ID] in vault [$Vault]"
+            Write-Verbose "[$stackPath] - Setting context [$ID] in vault [$Vault]"
             Set-Content -Path $contextPath -Value $content
         }
 
