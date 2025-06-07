@@ -46,8 +46,10 @@
     }
 
     process {
-        foreach ($vault in ($vaults | Where-Object { $_.Name -like $Name })) {
-            [ContextVault]::new($vault.Name, $vault.FullName)
+        foreach ($nameItem in $Name) {
+            foreach ($vault in ($vaults | Where-Object { $_.Name -like $nameItem })) {
+                [ContextVault]::new($vault.Name, $vault.FullName)
+            }
         }
     }
 
