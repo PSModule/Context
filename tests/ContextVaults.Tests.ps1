@@ -181,6 +181,44 @@ Describe 'ContextVault' {
         }
     }
 
+    Context 'Get-ContextInfo' {
+        BeforeAll {
+            Get-ContextVault | Remove-ContextVault -Confirm:$false
+            Set-ContextVault -Name 'info-test1'
+            Set-ContextVault -Name 'info-test2'
+            Set-ContextVault -Name 'other-info1'
+        }
+
+        AfterAll {
+            Get-ContextVault | Remove-ContextVault -Confirm:$false
+        }
+
+        It 'Should return context info for all vaults' {
+            $results = Get-ContextInfo
+            $results | Should -Not -BeNullOrEmpty
+            $results | Should -HaveCount 3
+            $results | ForEach-Object { $_.ID | Should -Not -BeNullOrEmpty }
+        }
+
+        It 'Should return context info for specific vault by name' {
+            $result = Get-ContextInfo -Vault 'info-test1'
+            $result | Should -Not -BeNullOrEmpty
+            $result.ID | Should -Be 'info-test1'
+        }
+
+        It 'Should return context info for multiple vaults using wildcards' {
+            $results = Get-ContextInfo -Vault 'info-*'
+            $results | Should -HaveCount 2
+            $results.ID | Should -Contain 'info-test1'
+            $results.ID | Should -Contain 'info-test2'
+        }
+
+        It 'Should return empty results for non-existent vault names' {
+            $result = Get-ContextInfo -Vault 'nonexistent-vault'
+            $result | Should -BeNullOrEmpty
+        }
+    }
+
     Context 'Pipeline and Combined Operations' {
         BeforeAll {
             Get-ContextVault | Remove-ContextVault -Confirm:$false
