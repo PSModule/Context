@@ -90,17 +90,22 @@
     }
 
     process {
-        $vaults = Get-ContextVault -Name $Vault -ErrorAction Stop
+        $vaults = foreach ($vaultName in $Vault) {
+            Get-ContextVault -Name $vaultName -ErrorAction Stop
+        }
+        Write-Debug "[$stackPath] - Found $($vaults.Count) vault(s) matching '$($Vault -join ', ')'."
 
-        foreach ($vault in $vaults) {
-            Write-Verbose "Retrieving context info from vault: $($vault.Name)"
-            $contexts = Get-ChildItem -Path $vault.ContextFolderPath -Filter *.json -File -Recurse
-            Write-Verbose "Found $($contexts.Count) context files in vault: $($vault.Name)"
-            foreach ($context in $contexts) {
-                $contextInfo = Get-Content -Path $context.FullName | ConvertFrom-Json
-                if ($ID | Where-Object { $contextInfo.ID -like $_ }) {
-                    $contextInfo
-                }
+        $files = foreach ($vault in $vaults) {
+            Get-ChildItem -Path $vault.Path -Filter *.json -File
+        }
+        Write-Debug "[$stackPath] - Found $($files.Count) context file(s) in vault(s)."
+
+        $contextInfos = $files | Get-Content -Path $_.FullName | ConvertFrom-Json
+        Write-Debug "[$stackPath] - Converted context files to JSON objects."
+
+        foreach ($context in $contextInfos) {
+            if ($ID | Where-Object { $context.ID -like $_ }) {
+                $context
             }
         }
     }

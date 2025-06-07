@@ -95,7 +95,7 @@ function Set-Context {
         if (-not $contextInfo) {
             Write-Verbose "Context [$ID] not found in vault"
             $guid = [Guid]::NewGuid().Guid
-            $contextPath = Join-Path -Path $vaultObject.ContextFolderPath -ChildPath "$guid.json"
+            $contextPath = Join-Path -Path $vaultObject.Path -ChildPath "$guid.json"
         } else {
             Write-Verbose "Context [$ID] found in vault"
             $contextPath = $contextInfo.Path
