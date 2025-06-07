@@ -82,11 +82,13 @@
             ValueFromPipeline,
             ValueFromPipelineByPropertyName
         )]
+        [ArgumentCompleter({ Complete-ContextID @args })]
         [SupportsWildcards()]
         [string[]] $ID,
 
         # The name of the vault to remove contexts from.
         [Parameter()]
+        [ArgumentCompleter({ Complete-ContextVaultName @args })]
         [string] $Vault
     )
 
@@ -100,7 +102,7 @@
         foreach ($contextInfo in $contextInfo) {
             $contextId = $contextInfo.ID
 
-            if ($PSCmdlet.ShouldProcess("Context '$contextId'", "Remove")) {
+            if ($PSCmdlet.ShouldProcess("Context '$contextId'", 'Remove')) {
                 Write-Debug "[$stackPath] - Removing context [$contextId]"
                 $contextInfo.Path | Remove-Item -Force -ErrorAction Stop
                 Write-Output "Removed item: $contextId"

@@ -24,6 +24,7 @@ function Set-ContextVault {
     param(
         # The name of the vault to create or update.
         [Parameter(Mandatory, ValueFromPipeline, ValueFromPipelineByPropertyName)]
+        [ArgumentCompleter({ Complete-ContextVaultName @args })]
         [string[]] $Name
     )
 
