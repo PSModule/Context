@@ -23,7 +23,7 @@ The Context module supports **multiple named context vaults**, enabling isolated
 
 ### Directory Structure
 
-```
+```plaintext
 $HOME/.contextvaults/
 ├── Vaults/
 │   ├── <VaultName>/
@@ -233,9 +233,9 @@ Store contexts in specific vaults using the `-Vault` parameter:
 
 ```pwsh
 # Store a context in the "MyModule" vault
-Set-Context -ID 'UserSettings' -Context @{ 
+Set-Context -ID 'UserSettings' -Context @{
     Theme = 'Dark'
-    Language = 'en-US' 
+    Language = 'en-US'
 } -Vault "MyModule"
 
 # Store user credentials in a specific vault
@@ -292,7 +292,7 @@ Move-Context -ID 'UserSettings' -SourceVault "OldModule" -TargetVault "NewModule
 
 ```pwsh
 function Initialize-MyModuleContext {
-    # Create or configure vault 
+    # Create or configure vault
     Set-ContextVault -Name "MyModule" -Description "Context vault for MyModule"
 }
 ```
@@ -305,11 +305,11 @@ function Set-MyModuleContext {
     param(
         [Parameter(Mandatory)]
         [string] $ID,
-        
+
         [Parameter(Mandatory)]
         [object] $Context
     )
-    
+
     Set-Context -ID $ID -Context $Context -Vault "MyModule"
 }
 
@@ -319,7 +319,7 @@ function Get-MyModuleContext {
         [Parameter()]
         [string] $ID = '*'
     )
-    
+
     Get-Context -ID $ID -Vault "MyModule"
 }
 
@@ -329,7 +329,7 @@ function Remove-MyModuleContext {
         [Parameter(Mandatory)]
         [string] $ID
     )
-    
+
     Remove-Context -ID $ID -Vault "MyModule"
 }
 ```

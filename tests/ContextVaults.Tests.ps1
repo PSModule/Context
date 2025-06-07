@@ -15,11 +15,11 @@ AfterAll {
 Describe 'ContextVault' {
     Context 'Set-ContextVault' {
         BeforeAll {
-            $testVaultNames = @('test-vault1', 'test-vault2', 'test-vault3')
+            Get-ContextVault | Remove-ContextVault -Confirm:$false
         }
 
         AfterAll {
-            Get-ContextVault -Name 'test-*' | Remove-ContextVault -Confirm:$false
+            Get-ContextVault | Remove-ContextVault -Confirm:$false
         }
 
         It 'Should create a new vault with a single name parameter' {
@@ -31,7 +31,7 @@ Describe 'ContextVault' {
         }
 
         It 'Should create multiple vaults from array parameter' {
-            $results = Set-ContextVault -Name $testVaultNames[1..2]
+            $results = Set-ContextVault -Name 'test-vault2', 'test-vault3'
             $results | Should -HaveCount 2
             $results | ForEach-Object { $_ | Should -BeOfType [ContextVault] }
             $results[0].Name | Should -Be 'test-vault2'
