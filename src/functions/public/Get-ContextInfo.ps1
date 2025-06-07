@@ -1,11 +1,11 @@
 ﻿function Get-ContextInfo {
     <#
         .SYNOPSIS
-        Retrieves info about a context from the context vault.
+        Retrieves info about a context from a context vault.
 
         .DESCRIPTION
-        Retrieves info about context files directly from the vault directory on disk.
-        If no ID is specified, all available info on contexts will be returned.
+        Retrieves info about contexts directly from a ContextVault.
+        If no ID is specified, info on all contexts will be returned.
         Wildcards are supported to match multiple contexts.
         Only metadata (ID and Path) is returned without decrypting the context contents.
 
@@ -14,8 +14,9 @@
 
         Output:
         ```powershell
-        ID   : MySettings
-        Path : ...\b7c01dbe-bccd-4c7e-b075-c5aac1c43b1a.json
+        ID                 Path
+        --                 ----
+        MySettings         C:\Users\<username>\.contextvaults\Vaults\Contexts\b7c01dbe-bccd-4c7e-b075-c5aac1c43b1a.json
 
         ID   : MyConfig
         Path : ...\feacc853-5bea-48d1-b751-41ce9768d48e.json
@@ -61,7 +62,7 @@
         Retrieves all contexts that start with 'My' from the context vault (directly from disk).
 
         .OUTPUTS
-        [System.Object]
+        [PSCustomObject]
 
         .NOTES
         Returns a list of context information matching the specified ID or all contexts if no ID is specified.
@@ -70,46 +71,52 @@
         .LINK
         https://psmodule.io/Context/Functions/Get-ContextInfo/
     #>
-    [OutputType([object])]
+    [OutputType([PSCustomObject])]
     [CmdletBinding()]
     param(
         # The name of the context to retrieve from the vault. Supports wildcards.
-        [Parameter(
-            ValueFromPipeline,
-            ValueFromPipelineByPropertyName
-        )]
-        [AllowEmptyString()]
+        [Parameter()]
+        [ArgumentCompleter({ Complete-ContextID @args })]
         [SupportsWildcards()]
-        [string[]] $ID = '*'
+        [string[]] $ID = '*',
+
+        # The name of the vault to retrieve context info from. Supports wildcards.
+        [Parameter()]
+        [ArgumentCompleter({ Complete-ContextVaultName @args })]
+        [string[]] $Vault = '*'
     )
 
     begin {
-        $stackPath = Get-PSCallStackPath
-        Write-Debug "[$stackPath] - Start"
-
-        if (-not $script:Config.Initialized) {
-            Set-ContextVault
+        $debug = $DebugPreference -eq 'Continue'
+        if ($debug) {
+            $stackPath = Get-PSCallStackPath
+            Write-Debug "[$stackPath] - Start"
         }
     }
 
     process {
-        Write-Verbose "Retrieving context info - ID: [$ID]"
-        foreach ($item in $ID) {
-            # Read context files directly from disk instead of using in-memory cache
-            $contextFiles = Get-ChildItem -Path $script:Config.VaultPath -Filter *.json -File -Recurse
-            foreach ($file in $contextFiles) {
-                try {
-                    $contextInfo = Get-Content -Path $file.FullName | ConvertFrom-Json
-                    if ($contextInfo.ID -like $item) {
-                        # Return only metadata (ID and Path), don't decrypt the Context property
-                        [PSCustomObject]@{
-                            ID   = $contextInfo.ID
-                            Path = $contextInfo.Path
-                        }
-                    }
-                } catch {
-                    Write-Warning "Failed to read context file: $($file.FullName). Error: $_"
-                }
+        $vaults = foreach ($vaultName in $Vault) {
+            Get-ContextVault -Name $vaultName -ErrorAction Stop
+        }
+        if ($debug) {
+            Write-Debug "[$stackPath] - Found $($vaults.Count) vault(s) matching '$($Vault -join ', ')'."
+        }
+
+        $files = foreach ($vaultObject in $vaults) {
+            Get-ChildItem -Path $vaultObject.Path -Filter *.json -File
+        }
+        if ($debug) {
+            Write-Debug "[$stackPath] - Found $($files.Count) context file(s) in vault(s)."
+        }
+
+        foreach ($file in $files) {
+            $contextInfo = Get-Content -Path $file.FullName | ConvertFrom-Json
+            if ($debug) {
+                Write-Debug "[$stackPath] - Processing file: $($file.FullName)"
+                $contextInfo | Format-List | Out-String -Stream | ForEach-Object { Write-Debug "[$stackPath]   $_" }
+            }
+            if ($contextInfo.ID -like $ID) {
+                $contextInfo
             }
         }
     }

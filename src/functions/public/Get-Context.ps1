@@ -47,12 +47,17 @@ function Get-Context {
         Retrieves all contexts from the context vault (directly from disk).
 
         .EXAMPLE
-        Get-Context -ID 'MySecret'
+        Get-Context -Vault 'MyModule'
 
-        Retrieves the context called 'MySecret' from the vault.
+        Retrieves all contexts from the 'MyModule' vault.
 
         .EXAMPLE
-        'My*' | Get-Context
+        Get-Context -ID 'MySecret' -Vault 'MyModule'
+
+        Retrieves the context called 'MySecret' from the 'MyModule' vault.
+
+        .EXAMPLE
+        'My*' | Get-Context -Vault 'MyModule'
 
         Output:
         ```powershell
@@ -90,42 +95,41 @@ function Get-Context {
             ValueFromPipeline,
             ValueFromPipelineByPropertyName
         )]
-        [AllowEmptyString()]
+        [ArgumentCompleter({ Complete-ContextID @args })]
         [SupportsWildcards()]
-        [string[]] $ID = '*'
+        [string[]] $ID = '*',
+
+        # The name of the vault to store the context in.
+        [Parameter()]
+        [ArgumentCompleter({ Complete-ContextVaultName @args })]
+        [SupportsWildcards()]
+        [string[]] $Vault = '*'
     )
 
     begin {
         $stackPath = Get-PSCallStackPath
         Write-Debug "[$stackPath] - Start"
-
-        if (-not $script:Config.Initialized) {
-            Set-ContextVault
-        }
     }
 
     process {
-        Write-Verbose "Retrieving contexts - ID: [$($ID -join ', ')]"
-        foreach ($item in $ID) {
-            Write-Verbose "Retrieving contexts - ID: [$item]"
-            # Read context files directly from disk instead of using in-memory cache
-            $contextFiles = Get-ChildItem -Path $script:Config.VaultPath -Filter *.json -File -Recurse
-            foreach ($file in $contextFiles) {
-                try {
-                    $contextInfo = Get-Content -Path $file.FullName | ConvertFrom-Json
-                    if ($contextInfo.ID -like $item) {
-                        # Decrypt and return the context
-                        $params = @{
-                            SealedBox  = $contextInfo.Context
-                            PublicKey  = $script:Config.PublicKey
-                            PrivateKey = $script:Config.PrivateKey
-                        }
-                        $contextObj = ConvertFrom-SodiumSealedBox @params
-                        ConvertFrom-ContextJson -JsonString $contextObj
-                    }
-                } catch {
-                    Write-Warning "Failed to read or decrypt context file: $($file.FullName). Error: $_"
+        $contextInfos = Get-ContextInfo -ID $ID -Vault $Vault -ErrorAction Stop
+        foreach ($contextInfo in $contextInfos) {
+            Write-Verbose "Retrieving context - ID: [$($contextInfo.ID)], Vault: [$($contextInfo.Vault)]"
+            try {
+                if (-not (Test-Path -Path $contextInfo.Path)) {
+                    Write-Warning "Context file does not exist: $($contextInfo.Path)"
+                    continue
                 }
+                $keys = Get-ContextVaultKeyPair -Vault $contextInfo.Vault
+                $params = @{
+                    SealedBox  = $contextInfo.Context
+                    PublicKey  = $keys.PublicKey
+                    PrivateKey = $keys.PrivateKey
+                }
+                $contextObj = ConvertFrom-SodiumSealedBox @params
+                ConvertFrom-ContextJson -JsonString $contextObj
+            } catch {
+                Write-Warning "Failed to read or decrypt context file: $($contextInfo.Path). Error: $_"
             }
         }
     }

@@ -11,7 +11,7 @@
         The function accepts pipeline input for easier batch removal.
 
         .EXAMPLE
-        Remove-Context -ID 'MySecret'
+        Remove-Context -ID 'MySecret' -Vault "MyModule"
 
         Output:
         ```powershell
@@ -19,7 +19,7 @@
         Removed item: MySecret
         ```
 
-        Removes a context called 'MySecret' by specifying its ID.
+        Removes a context called 'MySecret' from the "MyModule" vault by specifying its ID.
 
         .EXAMPLE
         Remove-Context -ID 'Ctx1','Ctx2'
@@ -82,37 +82,30 @@
             ValueFromPipeline,
             ValueFromPipelineByPropertyName
         )]
+        [ArgumentCompleter({ Complete-ContextID @args })]
         [SupportsWildcards()]
-        [string[]] $ID
+        [string[]] $ID,
+
+        # The name of the vault to remove contexts from.
+        [Parameter()]
+        [ArgumentCompleter({ Complete-ContextVaultName @args })]
+        [string] $Vault
     )
 
     begin {
         $stackPath = Get-PSCallStackPath
         Write-Debug "[$stackPath] - Begin"
-
-        if (-not $script:Config.Initialized) {
-            Set-ContextVault
-        }
     }
 
     process {
-        foreach ($item in $ID) {
-            Write-Verbose "Processing ID [$item]"
-            # Find contexts by scanning disk files instead of using in-memory cache
-            $contextFiles = Get-ChildItem -Path $script:Config.VaultPath -Filter *.json -File -Recurse
-            foreach ($file in $contextFiles) {
-                try {
-                    $contextInfo = Get-Content -Path $file.FullName | ConvertFrom-Json
-                    if ($contextInfo.ID -like $item) {
-                        Write-Verbose "Removing context [$($contextInfo.ID)]"
-                        if ($PSCmdlet.ShouldProcess($contextInfo.ID, 'Remove secret')) {
-                            $file.FullName | Remove-Item -Force
-                            Write-Verbose "Removed context file: $($file.FullName)"
-                        }
-                    }
-                } catch {
-                    Write-Warning "Failed to read context file: $($file.FullName). Error: $_"
-                }
+        $contextInfo = Get-ContextInfo -ID $ID -Vault $Vault
+        foreach ($contextInfo in $contextInfo) {
+            $contextId = $contextInfo.ID
+
+            if ($PSCmdlet.ShouldProcess("Context '$contextId'", 'Remove')) {
+                Write-Debug "[$stackPath] - Removing context [$contextId]"
+                $contextInfo.Path | Remove-Item -Force -ErrorAction Stop
+                Write-Output "Removed item: $contextId"
             }
         }
     }

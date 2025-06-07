@@ -3,40 +3,42 @@
 function Set-Context {
     <#
         .SYNOPSIS
-        Set a context and store it in the context vault.
+        Set a context in a context vault.
 
         .DESCRIPTION
         If the context does not exist, it will be created. If it already exists, it will be updated.
-        The context is securely stored on disk using encryption mechanisms.
-        Each context operation reads the current state from disk to ensure consistency across processes.
+        The context is encrypted and stored on disk. If the context vault does not exist, it will be created.
 
         .EXAMPLE
-        Set-Context -ID 'PSModule.GitHub' -Context @{ Name = 'MySecret' }
+        Set-Context -ID 'MyUser' -Context @{ Name = 'MyUser' } -Vault 'MyModule'
 
         Output:
         ```powershell
-        ID      : PSModule.GitHub
+        ID      : MyUser
         Path    : C:\Vault\Guid.json
-        Context : @{ Name = 'MySecret' }
+        Context : @{ Name = 'MyUser' }
         ```
 
-        Creates a context called 'MySecret' in the vault.
+        Creates a context called 'MyUser' in the 'MyModule' vault.
 
         .EXAMPLE
-        Set-Context -ID 'PSModule.GitHub' -Context @{ Name = 'MySecret'; AccessToken = '123123123' }
-
-        Output:
-        ```powershell
-        ID      : PSModule.GitHub
-        Path    : C:\Vault\Guid.json
-        Context : @{ Name = 'MySecret'; AccessToken = '123123123' }
-        ```
-
-        Creates a context called 'MySecret' in the vault with additional settings.
-
-        .EXAMPLE
-        $context = @{ ID = 'MySecret'; Name = 'SomeSecretIHave'; AccessToken = '123123123' }
+        $context = @{
+            ID          = 'MySecret'
+            Name        = 'SomeSecretIHave'
+            AccessToken = '123123123' | ConvertTo-SecureString -AsPlainText -Force
+        }
         $context | Set-Context
+
+        Output:
+        ```powershell
+        ID      : MyUser
+        Path    : C:\Vault\Guid.json
+        Context : {
+            ID          = MySecret
+            Name        = MyUser
+            AccessToken = System.Security.SecureString
+        }
+        ```
 
         Sets a context using a hashtable object.
 
@@ -50,7 +52,8 @@ function Set-Context {
         .LINK
         https://psmodule.io/Context/Functions/Set-Context/
     #>
-    [OutputType([object])]
+    [Alias('New-Context', 'Update-Context')]
+    [OutputType([PSCustomObject])]
     [CmdletBinding(SupportsShouldProcess)]
     param(
         # The ID of the context.
@@ -61,21 +64,21 @@ function Set-Context {
         [Parameter(ValueFromPipeline)]
         [object] $Context = @{},
 
-        # Pass the context through the pipeline.
-        [Parameter()]
-        [switch] $PassThru
+        # The name of the vault to store the context in.
+        [Parameter(Mandatory)]
+        [ArgumentCompleter({ Complete-ContextVaultName @args })]
+        [string] $Vault
     )
 
     begin {
         $stackPath = Get-PSCallStackPath
         Write-Debug "[$stackPath] - Start"
-
-        if (-not $script:Config.Initialized) {
-            Set-ContextVault
-        }
     }
 
     process {
+        $vaultObject = Set-ContextVault -Name $Vault
+        Write-Verbose "$($vaultObject | Format-List | Out-String)"
+
         if ($context -is [System.Collections.IDictionary]) {
             $Context = [PSCustomObject]$Context
         }
@@ -86,47 +89,37 @@ function Set-Context {
         if (-not $ID) {
             throw 'An ID is required, either as a parameter or as a property of the context object.'
         }
-        $existingContextFile = $null
-        # Check if context already exists by scanning disk files
-        $contextFiles = Get-ChildItem -Path $script:Config.VaultPath -Filter *.json -File -Recurse
-        foreach ($file in $contextFiles) {
-            try {
-                $contextInfo = Get-Content -Path $file.FullName | ConvertFrom-Json
-                if ($contextInfo.ID -eq $ID) {
-                    $existingContextFile = $file
-                    $Path = $contextInfo.Path
-                    break
-                }
-            } catch {
-                Write-Warning "Failed to read context file: $($file.FullName). Error: $_"
-            }
-        }
 
-        if (-not $existingContextFile) {
-            Write-Verbose "Context [$ID] not found in vault"
-            $Guid = [Guid]::NewGuid().ToString()
-            $Path = Join-Path -Path $script:Config.VaultPath -ChildPath "$Guid.json"
+        $contextInfo = Get-ContextInfo -ID $ID -Vault $Vault
+        Write-Verbose 'Context info:'
+        $contextInfo | Format-List | Out-String -Stream | ForEach-Object { Write-Verbose $_ }
+        if (-not $contextInfo) {
+            Write-Verbose "[$stackPath] - Creating context [$ID] in [$Vault]"
+            $guid = [Guid]::NewGuid().Guid
+            $contextPath = Join-Path -Path $vaultObject.Path -ChildPath "$guid.json"
         } else {
-            Write-Verbose "Context [$ID] found in vault"
+            Write-Verbose "[$stackPath] - Context [$ID] found in [$Vault]"
+            $contextPath = $contextInfo.Path
         }
+        Write-Verbose "[$stackPath] - Context path: [$contextPath]"
 
         $contextJson = ConvertTo-ContextJson -Context $Context -ID $ID
-
-        $param = [pscustomobject]@{
+        $keys = Get-ContextVaultKeyPair -Vault $Vault
+        $content = [pscustomobject]@{
             ID      = $ID
-            Path    = $Path
-            Context = ConvertTo-SodiumSealedBox -Message $contextJson -PublicKey $script:Config.PublicKey
+            Path    = $contextPath
+            Vault   = $Vault
+            Context = ConvertTo-SodiumSealedBox -Message $contextJson -PublicKey $keys.PublicKey
         } | ConvertTo-Json -Depth 5
-        Write-Debug ($param | ConvertTo-Json -Depth 5)
+        Write-Verbose 'Content:'
+        $content | ConvertTo-Json -Depth 5 | Out-String -Stream | ForEach-Object { Write-Verbose $_ }
 
-        if ($PSCmdlet.ShouldProcess($ID, 'Set context')) {
-            Write-Verbose "Setting context [$ID] in vault"
-            Set-Content -Path $Path -Value $param
+        if ($PSCmdlet.ShouldProcess("file: [$contextPath]", 'Set content')) {
+            Write-Verbose "[$stackPath] - Setting context [$ID] in vault [$Vault]"
+            Set-Content -Path $contextPath -Value $content
         }
 
-        if ($PassThru) {
-            Get-Context -ID $ID
-        }
+        Get-Context -ID $ID -Vault $Vault
     }
 
     end {

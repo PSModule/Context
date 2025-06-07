@@ -30,7 +30,7 @@
         Converts a JSON string to a context object, ensuring 'Token' and 'Nested.Token' values are SecureString objects.
 
         .OUTPUTS
-        [pscustomobject].
+        PSCustomObject
 
         .NOTES
         Returns a PowerShell custom object with SecureString conversion applied where necessary.
