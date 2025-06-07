@@ -90,13 +90,14 @@ function Set-Context {
         }
 
         $contextInfo = Get-ContextInfo -ID $ID -Vault $Vault
-        Write-Verbose "$($contextInfo | Format-List | Out-String)"
+        Write-Verbose 'Context info:'
+        $contextInfo | Format-List | Out-String -Stream | ForEach-Object { Write-Verbose $_ }
         if (-not $contextInfo) {
-            Write-Verbose "[$stackPath] - Context [$ID] not found in vault"
+            Write-Verbose "[$stackPath] - Creating context [$ID] in [$Vault]"
             $guid = [Guid]::NewGuid().Guid
             $contextPath = Join-Path -Path $vaultObject.Path -ChildPath "$guid.json"
         } else {
-            Write-Verbose "[$stackPath] - Context [$ID] found in vault"
+            Write-Verbose "[$stackPath] - Context [$ID] found in [$Vault]"
             $contextPath = $contextInfo.Path
         }
         Write-Verbose "[$stackPath] - Context path: [$contextPath]"
@@ -109,7 +110,8 @@ function Set-Context {
             Vault   = $Vault
             Context = ConvertTo-SodiumSealedBox -Message $contextJson -PublicKey $keys.PublicKey
         } | ConvertTo-Json -Depth 5
-        Write-Verbose ($content | ConvertTo-Json -Depth 5)
+        Write-Verbose 'Content:'
+        $content | ConvertTo-Json -Depth 5 | Out-String -Stream | ForEach-Object { Write-Verbose $_ }
 
         if ($PSCmdlet.ShouldProcess("file: [$contextPath]", 'Set content')) {
             Write-Verbose "[$stackPath] - Setting context [$ID] in vault [$Vault]"
