@@ -279,9 +279,10 @@ Describe 'Context' {
 
         It 'Should return multiple contexts matching wildcard ID in VaultA' {
             $results = Get-ContextInfo -ID 'TestID*' -Vault 'VaultA'
-            $results | Should -HaveCount 2
+            $results | Should -HaveCount 3
             $results.ID | Should -Contain 'TestID1'
             $results.ID | Should -Contain 'TestID2'
+            $results.ID | Should -Contain 'TestID3'
         }
 
         It 'Should return no results for non-existent context ID in VaultA' {
