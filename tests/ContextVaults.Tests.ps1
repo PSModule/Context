@@ -8,7 +8,11 @@ BeforeAll {
     Get-ContextVault | Remove-ContextVault -Confirm:$false
 }
 
-Describe 'ContextVault Management Functions' {
+AfterAll {
+    Get-ContextVault | Remove-ContextVault -Confirm:$false
+}
+
+Describe 'ContextVault' {
     Context 'Set-ContextVault' {
         BeforeAll {
             $testVaultNames = @('test-vault1', 'test-vault2', 'test-vault3')
@@ -102,6 +106,11 @@ Describe 'ContextVault Management Functions' {
             Set-ContextVault -Name 'remove-test3'
             Set-ContextVault -Name 'keep-test1'
         }
+
+        AfterAll {
+            Get-ContextVault | Remove-ContextVault -Confirm:$false
+        }
+
 
         It 'Should remove a specific vault by name' {
             Remove-ContextVault -Name 'remove-test1' -Confirm:$false

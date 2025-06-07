@@ -5,36 +5,38 @@
 param()
 
 BeforeAll {
-    $contexts = Get-ContextInfo -Verbose
-    Write-Verbose "Contexts: $($contexts.Count)" -Verbose
-    Write-Verbose ($contexts | Format-Table | Out-String) -Verbose
-    $contexts | Remove-Context -Verbose
-    Remove-Module -Name Context -Force -Verbose
-    Import-Module -Name Context -Force -Verbose -Version 999.0.0
+    Get-ContextVault | Remove-ContextVault -Confirm:$false
+    # Create two vaults for multi-vault tests
+    Set-ContextVault -Name 'VaultA' | Out-Null
+    Set-ContextVault -Name 'VaultB' | Out-Null
 }
 
-Describe 'Functions' {
-    Context 'Function: Set-Context' {
-        It "Set-Context -ID 'TestID1'" {
-            { Set-Context -ID 'TestID1' } | Should -Not -Throw
-            $result = Get-Context -ID 'TestID1'
+AfterAll {
+    Get-ContextVault | Remove-ContextVault -Confirm:$false
+}
+
+Describe 'Context' {
+    Context 'Set-Context' {
+        It "Set-Context -ID 'TestID1' -Vault 'VaultA'" {
+            { Set-Context -ID 'TestID1' -Vault 'VaultA' } | Should -Not -Throw
+            $result = Get-Context -ID 'TestID1' -Vault 'VaultA'
             Write-Verbose ($result | Out-String) -Verbose
             $result | Should -Not -BeNullOrEmpty
             $result.ID | Should -Be 'TestID1'
         }
-        It "Set-Context -ID 'TestID2' -Context @{}" {
-            { Set-Context -ID 'TestID2' -Context @{} } | Should -Not -Throw
-            $result = Get-Context -ID 'TestID2'
+        It "Set-Context -ID 'TestID2' -Context @{} -Vault 'VaultA'" {
+            { Set-Context -ID 'TestID2' -Context @{} -Vault 'VaultA' } | Should -Not -Throw
+            $result = Get-Context -ID 'TestID2' -Vault 'VaultA'
             $result | Should -Not -BeNullOrEmpty
             $result.ID | Should -Be 'TestID2'
         }
-        It "Set-Context -ID 'TestID2' -Context @{} - Again" {
-            { Set-Context -ID 'TestID2' -Context @{} } | Should -Not -Throw
-            $result = Get-Context -ID 'TestID2'
+        It "Set-Context -ID 'TestID2' -Context @{} - Again -Vault 'VaultA'" {
+            { Set-Context -ID 'TestID2' -Context @{} -Vault 'VaultA' } | Should -Not -Throw
+            $result = Get-Context -ID 'TestID2' -Vault 'VaultA'
             $result | Should -Not -BeNullOrEmpty
             $result.ID | Should -Be 'TestID2'
         }
-        It "Set-Context -ID 'john_doe' -Context [advanced object]" {
+        It "Set-Context -ID 'john_doe' -Context [advanced object] -Vault 'VaultA'" {
             $contextData = [PSCustomObject]@{
                 Username          = 'john_doe'
                 AuthToken         = 'ghp_12345ABCDE67890FGHIJ' | ConvertTo-SecureString -AsPlainText -Force #gitleaks:allow
@@ -99,8 +101,8 @@ Describe 'Functions' {
                 }
             }
 
-            { Set-Context -ID 'john_doe' -Context $contextData } | Should -Not -Throw
-            $context = Get-Context -ID 'john_doe'
+            { Set-Context -ID 'john_doe' -Context $contextData -Vault 'VaultA' } | Should -Not -Throw
+            $context = Get-Context -ID 'john_doe' -Vault 'VaultA'
             $context | Should -Not -BeNullOrEmpty
             $context.ID | Should -Be 'john_doe'
             $context.Username | Should -Be 'john_doe'
@@ -148,162 +150,159 @@ Describe 'Functions' {
         # }
     }
 
-    Context 'Function: Get-Context' {
-        It 'Get-Context - Should return all contexts' {
-            Write-Verbose (Get-Context | Out-String) -Verbose
-            (Get-Context).Count | Should -Be 3
+    Context 'Get-Context' {
+        It 'Get-Context - Should return all contexts in VaultA' {
+            Write-Verbose (Get-Context -Vault 'VaultA' | Out-String) -Verbose
+            (Get-Context -Vault 'VaultA').Count | Should -Be 3
         }
-        It "Get-Context -ID '*' - Should return all contexts" {
-            Write-Verbose (Get-Context -ID '*' | Out-String) -Verbose
-            (Get-Context -ID '*').Count | Should -Be 3
+        It "Get-Context -ID '*' - Should return all contexts in VaultA" {
+            Write-Verbose (Get-Context -ID '*' -Vault 'VaultA' | Out-String) -Verbose
+            (Get-Context -ID '*' -Vault 'VaultA').Count | Should -Be 3
         }
-        It "Get-Context -ID 'TestID*' - Should return all contexts" {
-            Write-Verbose (Get-Context -ID 'TestID*' | Out-String) -Verbose
-            (Get-Context -ID 'TestID*').Count | Should -Be 2
+        It "Get-Context -ID 'TestID*' - Should return all contexts in VaultA" {
+            Write-Verbose (Get-Context -ID 'TestID*' -Vault 'VaultA' | Out-String) -Verbose
+            (Get-Context -ID 'TestID*' -Vault 'VaultA').Count | Should -Be 2
         }
-        It "Get-Context -ID '' - Should return no contexts" {
-            Write-Verbose (Get-Context -ID '' | Out-String) -Verbose
-            { Get-Context -ID '' } | Should -Not -Throw
-            Get-Context -ID '' | Should -BeNullOrEmpty
+        It "Get-Context -ID '' - Should return no contexts in VaultA" {
+            Write-Verbose (Get-Context -ID '' -Vault 'VaultA' | Out-String) -Verbose
+            { Get-Context -ID '' -Vault 'VaultA' } | Should -Not -Throw
+            Get-Context -ID '' -Vault 'VaultA' | Should -BeNullOrEmpty
         }
-        It 'Get-Context -ID $null - Should return no contexts' {
-            Write-Verbose (Get-Context -ID $null | Out-String) -Verbose
-            { Get-Context -ID $null } | Should -Not -Throw
-            Get-Context -ID $null | Should -BeNullOrEmpty
-        }
-    }
-
-    Context 'Function: Remove-Context' {
-        It "Remove-Context -ID 'AContextID' - Should remove the context" {
-            Get-Context | Remove-Context
-
-            { 1..10 | ForEach-Object {
-                    Set-Context -Context @{} -ID "Temp$_"
-                }
-            } | Should -Not -Throw
-
-            (Get-Context -ID 'Temp*').Count | Should -Be 10
-
-            { 1..10 | ForEach-Object {
-                    Remove-Context -ID "Temp$_"
-                }
-            } | Should -Not -Throw
-            (Get-Context -ID 'Temp*').Count | Should -Be 0
-        }
-
-        It "Remove-Context -ID 'NonExistentContext' - Should not throw" {
-            { Remove-Context -ID 'NonExistentContext' } | Should -Not -Throw
-        }
-
-        It "'john_doe' | Remove-Context - Should remove the context" {
-            { 'john_doe' | Remove-Context } | Should -Not -Throw
-            Get-Context -ID 'john_doe' | Should -BeNullOrEmpty
+        It 'Get-Context -ID $null - Should return no contexts in VaultA' {
+            Write-Verbose (Get-Context -ID $null -Vault 'VaultA' | Out-String) -Verbose
+            { Get-Context -ID $null -Vault 'VaultA' } | Should -Not -Throw
+            Get-Context -ID $null -Vault 'VaultA' | Should -BeNullOrEmpty
         }
     }
 
-    Context 'Function: Rename-Context' {
+    Context 'Remove-Context' {
+        It "Remove-Context -ID 'AContextID' - Should remove the context from VaultA" {
+            Get-Context -Vault 'VaultA' | Remove-Context -Vault 'VaultA'
+            { 1..10 | ForEach-Object {
+                    Set-Context -Context @{} -ID "Temp$_" -Vault 'VaultA'
+                }
+            } | Should -Not -Throw
+            (Get-Context -ID 'Temp*' -Vault 'VaultA').Count | Should -Be 10
+            { 1..10 | ForEach-Object {
+                    Remove-Context -ID "Temp$_" -Vault 'VaultA'
+                }
+            } | Should -Not -Throw
+            (Get-Context -ID 'Temp*' -Vault 'VaultA').Count | Should -Be 0
+        }
+        It "Remove-Context -ID 'NonExistentContext' - Should not throw in VaultA" {
+            { Remove-Context -ID 'NonExistentContext' -Vault 'VaultA' } | Should -Not -Throw
+        }
+        It "'john_doe' | Remove-Context - Should remove the context from VaultA" {
+            { 'john_doe' | Remove-Context -Vault 'VaultA' } | Should -Not -Throw
+            Get-Context -ID 'john_doe' -Vault 'VaultA' | Should -BeNullOrEmpty
+        }
+    }
+
+    Context 'Rename-Context' {
         BeforeEach {
             # Ensure no contexts exist before starting tests
-            Get-Context | Remove-Context
+            Get-Context -Vault 'VaultA' | Remove-Context -Vault 'VaultA'
         }
 
         AfterEach {
             # Cleanup any contexts created during tests
-            Get-Context | Remove-Context
+            Get-Context -Vault 'VaultA' | Remove-Context -Vault 'VaultA'
         }
 
-        It 'Renames the context successfully' {
+        It 'Renames the context successfully in VaultA' {
             $ID = 'TestContext'
             $newID = 'RenamedContext'
 
-            Set-Context -ID $ID
+            Set-Context -ID $ID -Vault 'VaultA'
 
             # Rename the context
-            Rename-Context -ID $ID -NewID $newID
+            Rename-Context -ID $ID -NewID $newID -Vault 'VaultA'
 
             # Verify the old context no longer exists
-            Get-Context -ID $ID | Should -BeNullOrEmpty
-            Get-Context -ID $newID | Should -Not -BeNullOrEmpty
+            Get-Context -ID $ID -Vault 'VaultA' | Should -BeNullOrEmpty
+            Get-Context -ID $newID -Vault 'VaultA' | Should -Not -BeNullOrEmpty
         }
 
-        It 'Throws an error when renaming a non-existent context' {
-            { Rename-Context -ID 'NonExistentContext' -NewID 'NewContext' } | Should -Throw
+        It 'Throws an error when renaming a non-existent context in VaultA' {
+            { Rename-Context -ID 'NonExistentContext' -NewID 'NewContext' -Vault 'VaultA' } | Should -Throw
         }
 
-        It 'Renaming a context to an existing context throws without force' {
+        It 'Renaming a context to an existing context throws without force in VaultA' {
             $existingID = 'ExistingContext'
 
-            Set-Context -ID $existingID
-            Set-Context -ID 'TestContext'
+            Set-Context -ID $existingID -Vault 'VaultA'
+            Set-Context -ID 'TestContext' -Vault 'VaultA'
 
             # Attempt to rename the context to an existing context
-            { Rename-Context -ID 'TestContext' -NewID $existingID } | Should -Throw
+            { Rename-Context -ID 'TestContext' -NewID $existingID -Vault 'VaultA' } | Should -Throw
         }
 
-        It 'Sets a context where the ID is in the context data' {
+        It 'Sets a context where the ID is in the context data in VaultA' {
             $contextData = [PSCustomObject]@{
                 ID   = 'TestContext'
                 Data = 'Some data'
             }
 
-            { Set-Context -Context $contextData } | Should -Not -Throw
-            $result = Get-Context -ID 'TestContext'
+            { Set-Context -Context $contextData -Vault 'VaultA' } | Should -Not -Throw
+            $result = Get-Context -ID 'TestContext' -Vault 'VaultA'
             $result | Should -Not -BeNullOrEmpty
             $result.ID | Should -Be 'TestContext'
             $result.Data | Should -Be 'Some data'
         }
 
-        It 'Renaming a context to an existing context does not throw with force' {
+        It 'Renaming a context to an existing context does not throw with force in VaultA' {
             $existingID = 'ExistingContext'
 
-            Set-Context -ID $existingID
-            Set-Context -ID 'TestContext'
+            Set-Context -ID $existingID -Vault 'VaultA'
+            Set-Context -ID 'TestContext' -Vault 'VaultA'
 
             # Attempt to rename the context to an existing context
-            { Rename-Context -ID 'TestContext' -NewID $existingID -Force } | Should -Not -Throw
+            { Rename-Context -ID 'TestContext' -NewID $existingID -Vault 'VaultA' -Force } | Should -Not -Throw
         }
     }
 
-    # New tests to verify that pipeline input is fully supported
     Context 'Pipeline Input support' {
-        It 'Get-Context supports pipeline input as strings' {
-            # Create two contexts to test pipeline input
-            Set-Context -ID 'PipeContext1' -Context @{ Dummy = 1 }
-            Set-Context -ID 'PipeContext2' -Context @{ Dummy = 2 }
-            $result = 'PipeContext1', 'PipeContext2' | Get-Context
+        It 'Get-Context supports pipeline input as strings in VaultA' {
+            Set-Context -ID 'PipeContext1' -Context @{ Dummy = 1 } -Vault 'VaultA'
+            Set-Context -ID 'PipeContext2' -Context @{ Dummy = 2 } -Vault 'VaultA'
+            $result = 'PipeContext1', 'PipeContext2' | Get-Context -Vault 'VaultA'
             $result | Should -Not -BeNullOrEmpty
             $result.ID | Should -Contain 'PipeContext1'
             $result.ID | Should -Contain 'PipeContext2'
         }
-
-        It 'Get-Context supports pipeline input by property name' {
-            # Create a context and pass an object with an ID property
-            Set-Context -ID 'PipeContext3' -Context @{ Dummy = 3 }
+        It 'Get-Context supports pipeline input by property name in VaultA' {
+            Set-Context -ID 'PipeContext3' -Context @{ Dummy = 3 } -Vault 'VaultA'
             $obj = [PSCustomObject]@{ ID = 'PipeContext3' }
-            $result = $obj | Get-Context
+            $result = $obj | Get-Context -Vault 'VaultA'
             $result | Should -Not -BeNullOrEmpty
             $result.ID | Should -Be 'PipeContext3'
         }
-
+        # Get-ContextInfo tests below intentionally omit -Vault for legacy/default behavior
         It 'Get-ContextInfo supports pipeline input as strings' {
-            # Create two contexts and verify that Get-ContextInfo excludes the Context property
-            Set-Context -ID 'PipeInfo1' -Context @{ Dummy = 1 }
-            Set-Context -ID 'PipeInfo2' -Context @{ Dummy = 2 }
+            Set-Context -ID 'PipeInfo1' -Context @{ Dummy = 1 } -Vault 'VaultA'
+            Set-Context -ID 'PipeInfo2' -Context @{ Dummy = 2 } -Vault 'VaultA'
             $result = 'PipeInfo1', 'PipeInfo2' | Get-ContextInfo
             $result | Should -Not -BeNullOrEmpty
             $result.ID | Should -Contain 'PipeInfo1'
             $result.ID | Should -Contain 'PipeInfo2'
             $result | ForEach-Object { $_.PSObject.Properties.Name | Should -BeIn @('ID', 'Path') }
         }
-
         It 'Get-ContextInfo supports pipeline input by property name' {
-            # Create a context and pass an object with an ID property to Get-ContextInfo
-            Set-Context -ID 'PipeInfo3' -Context @{ Dummy = 3 }
+            Set-Context -ID 'PipeInfo3' -Context @{ Dummy = 3 } -Vault 'VaultA'
             $obj = [PSCustomObject]@{ ID = 'PipeInfo3' }
             $result = $obj | Get-ContextInfo
             $result | Should -Not -BeNullOrEmpty
             $result.ID | Should -Be 'PipeInfo3'
             $result | ForEach-Object { $_.PSObject.Properties.Name | Should -BeIn @('ID', 'Path') }
+        }
+        It 'Get-ContextInfo can retrieve info from multiple vaults' {
+            # Set contexts in both VaultA and VaultB
+            Set-Context -ID 'MultiVault1' -Context @{ Dummy = 'A' } -Vault 'VaultA'
+            Set-Context -ID 'MultiVault2' -Context @{ Dummy = 'B' } -Vault 'VaultB'
+            $result = Get-ContextInfo -ID 'MultiVault*' -Vault @('VaultA', 'VaultB')
+            $result | Should -Not -BeNullOrEmpty
+            $result.ID | Should -Contain 'MultiVault1'
+            $result.ID | Should -Contain 'MultiVault2'
         }
     }
 }
