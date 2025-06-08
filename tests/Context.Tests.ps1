@@ -179,7 +179,7 @@ Describe 'Context' {
             { Get-Context -ID $null -Vault 'VaultA' } | Should -Not -Throw
             Get-Context -ID $null -Vault 'VaultA' | Should -BeNullOrEmpty
         }
-        It "Get-Context -ID array - Should return only specified contexts in VaultA" {
+        It 'Get-Context -ID array - Should return only specified contexts in VaultA' {
             $ids = @('TestID1', 'TestID2')
             $results = Get-Context -ID $ids -Vault 'VaultA'
             $results | Should -Not -BeNullOrEmpty
