@@ -38,7 +38,7 @@ Describe 'ContextVault' {
         }
 
         It 'Should create a new vault with a single name parameter' {
-            $result = Set-ContextVault -Name 'test-vault1'
+            $result = Set-ContextVault -Name 'test-vault1' -PassThru
             $result | Should -Not -BeNullOrEmpty
             $result | Should -BeOfType [ContextVault]
             $result.Name | Should -Be 'test-vault1'
@@ -46,7 +46,7 @@ Describe 'ContextVault' {
         }
 
         It 'Should create multiple vaults from array parameter' {
-            $results = Set-ContextVault -Name 'test-vault2', 'test-vault3'
+            $results = Set-ContextVault -Name 'test-vault2', 'test-vault3' -PassThru
             $results | Should -HaveCount 2
             $results | ForEach-Object { $_ | Should -BeOfType [ContextVault] }
             $results[0].Name | Should -Be 'test-vault2'
@@ -54,7 +54,7 @@ Describe 'ContextVault' {
         }
 
         It 'Should accept pipeline input for vault creation' {
-            $results = 'test-pipeline1', 'test-pipeline2' | Set-ContextVault
+            $results = 'test-pipeline1', 'test-pipeline2' | Set-ContextVault -PassThru
             $results | Should -HaveCount 2
             $results | ForEach-Object { $_ | Should -BeOfType [ContextVault] }
             $results.Name | Should -Contain 'test-pipeline1'
@@ -208,7 +208,7 @@ Describe 'ContextVault' {
 
         It 'Should support pipeline operations with variables' {
             $testVaults = @('pipeline-var1', 'pipeline-var2')
-            $results = $testVaults | Set-ContextVault
+            $results = $testVaults | Set-ContextVault -PassThru
             $results | Should -HaveCount 2
 
             $getResults = Get-ContextVault -Name $testVaults

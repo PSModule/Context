@@ -29,7 +29,11 @@
 
         # The vault object to reset.
         [Parameter(Mandatory, ValueFromPipeline, ParameterSetName = 'As ContextVault')]
-        [ContextVault[]] $InputObject
+        [ContextVault[]] $InputObject,
+
+        # Pass the context through the pipeline.
+        [Parameter()]
+        [switch] $PassThru
     )
 
     begin {
@@ -45,7 +49,7 @@
                         Write-Verbose "Resetting ContextVault [$($vault.Name)] at path [$($vault.Path)]"
                         if ($PSCmdlet.ShouldProcess("ContextVault: [$($vault.Name)]", 'Reset')) {
                             Remove-ContextVault -Name $($vault.Name) -Confirm:$false
-                            Set-ContextVault -Name $($vault.Name)
+                            Set-ContextVault -Name $($vault.Name) -PassThru:$PassThru
                             Write-Verbose "ContextVault [$($vault.Name)] reset successfully."
                         }
                     }

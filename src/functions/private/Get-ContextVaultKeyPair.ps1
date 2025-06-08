@@ -32,7 +32,7 @@
     }
 
     process {
-        $vaultObject = Set-ContextVault -Name $Vault
+        $vaultObject = Set-ContextVault -Name $Vault -PassThru
         $shardPath = Join-Path -Path $vaultObject.Path -ChildPath $script:Config.ShardFileName
         $fileShard = Get-Content -Path $shardPath
         $machineShard = [System.Environment]::MachineName

@@ -67,7 +67,11 @@ function Set-Context {
         # The name of the vault to store the context in.
         [Parameter(Mandatory)]
         [ArgumentCompleter({ Complete-ContextVaultName @args })]
-        [string] $Vault
+        [string] $Vault,
+
+        # Pass the context through the pipeline.
+        [Parameter()]
+        [switch] $PassThru
     )
 
     begin {
@@ -76,7 +80,7 @@ function Set-Context {
     }
 
     process {
-        $vaultObject = Set-ContextVault -Name $Vault
+        $vaultObject = Set-ContextVault -Name $Vault -PassThru
         $vaultObject | Format-List | Out-String -Stream | ForEach-Object { Write-Verbose "[$stackPath]   $_" }
 
         if ($context -is [System.Collections.IDictionary]) {
@@ -119,7 +123,9 @@ function Set-Context {
             Set-Content -Path $contextPath -Value $content
         }
 
-        Get-Context -ID $ID -Vault $Vault
+        if ($PassThru) {
+            Get-Context -ID $ID -Vault $Vault
+        }
     }
 
     end {
