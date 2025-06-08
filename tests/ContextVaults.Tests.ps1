@@ -208,7 +208,7 @@ Describe 'ContextVault' {
 
         It 'Should support pipeline operations with variables' {
             $testVaults = @('pipeline-var1', 'pipeline-var2')
-            $results = $testVaults | Set-ContextVault
+            $results = $testVaults | Set-ContextVault -PassThru
             $results | Should -HaveCount 2
 
             $getResults = Get-ContextVault -Name $testVaults
