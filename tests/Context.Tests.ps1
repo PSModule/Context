@@ -179,6 +179,40 @@ Describe 'Context' {
             { Get-Context -ID $null -Vault 'VaultA' } | Should -Not -Throw
             Get-Context -ID $null -Vault 'VaultA' | Should -BeNullOrEmpty
         }
+        It 'Get-Context -ID array - Should return only specified contexts in VaultA' {
+            $ids = @('TestID1', 'TestID2')
+            $results = Get-Context -ID $ids -Vault 'VaultA'
+            $results | Should -Not -BeNullOrEmpty
+            $results.Count | Should -Be 2
+            $results.ID | Should -Contain 'TestID1'
+            $results.ID | Should -Contain 'TestID2'
+            $results.ID | Should -Not -Contain 'TestID3'
+        }
+        It 'Get-Context -ID single - Should not have output leakage (returns only one context)' {
+            $id = 'TestID1'
+            $results = Get-Context -ID $id -Vault 'VaultA'
+            $results | Should -Not -BeNullOrEmpty
+            $results.Count | Should -Be 1
+            $results.ID | Should -Be $id
+        }
+        It 'Get-Context -ID single (nonexistent) - Should not have output leakage (returns nothing)' {
+            $id = 'NonExistentContext'
+            $results = Get-Context -ID $id -Vault 'VaultA'
+            $results | Should -BeNullOrEmpty
+        }
+        It 'Get-Context -ID array with one valid and one invalid - Should not have output leakage (returns only valid)' {
+            $ids = @('TestID1', 'NonExistentContext')
+            $results = Get-Context -ID $ids -Vault 'VaultA'
+            $results | Should -Not -BeNullOrEmpty
+            $results.Count | Should -Be 1
+            $results.ID | Should -Be 'TestID1'
+        }
+        It 'Get-Context -ID with whitespace or null - Should not have output leakage (returns nothing)' {
+            $results = Get-Context -ID '   ' -Vault 'VaultA'
+            $results | Should -BeNullOrEmpty
+            $results = Get-Context -ID $null -Vault 'VaultA'
+            $results | Should -BeNullOrEmpty
+        }
     }
 
     Context 'Remove-Context' {
@@ -303,6 +337,16 @@ Describe 'Context' {
         It 'Should return no results for non-existent context ID in VaultA' {
             $result = Get-ContextInfo -ID 'NonExistentContext' -Vault 'VaultA'
             $result | Should -BeNullOrEmpty
+        }
+
+        It 'Should return only specified contexts for multiple IDs in VaultA' {
+            $ids = @('TestID1', 'TestID2')
+            $results = Get-ContextInfo -ID $ids -Vault 'VaultA'
+            $results | Should -Not -BeNullOrEmpty
+            $results.Count | Should -Be 2
+            $results.ID | Should -Contain 'TestID1'
+            $results.ID | Should -Contain 'TestID2'
+            $results.ID | Should -Not -Contain 'TestID3'
         }
     }
 }

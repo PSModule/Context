@@ -103,9 +103,9 @@
             $contextId = $contextInfo.ID
 
             if ($PSCmdlet.ShouldProcess("Context '$contextId'", 'Remove')) {
-                Write-Debug "[$stackPath] - Removing context [$contextId]"
+                Write-Verbose "[$stackPath] - Removing context [$contextId]"
                 $contextInfo.Path | Remove-Item -Force -ErrorAction Stop
-                Write-Output "Removed item: $contextId"
+                Write-Verbose "[$stackPath] - Removed item: $contextId"
             }
         }
     }

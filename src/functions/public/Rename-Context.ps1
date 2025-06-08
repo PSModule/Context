@@ -30,7 +30,7 @@
         Renames the context 'PSModule.GitHub' to 'PSModule.GitHub2' using pipeline input.
 
         .OUTPUTS
-        [System.String]
+        object
 
         .NOTES
         The confirmation message indicating the successful renaming of the context.
@@ -38,7 +38,7 @@
         .LINK
         https://psmodule.io/Context/Functions/Rename-Context/
     #>
-
+    [OutputType([object])]
     [CmdletBinding(SupportsShouldProcess)]
     param (
         # The ID of the context to rename.
@@ -66,21 +66,21 @@
 
     begin {
         $stackPath = Get-PSCallStackPath
-        Write-Debug "[$stackPath] - Start"
+        Write-Debug "[$stackPath] - Begin"
     }
 
     process {
         $context = Get-Context -ID $ID -Vault $Vault
         if (-not $context) {
-            throw "Context with ID '$ID' not found$(if ($Vault) { " in vault '$Vault'" })."
+            throw "Context with ID '$ID' not found in vault '$Vault'"
         }
 
         $existingContext = Get-Context -ID $NewID -Vault $Vault
         if ($existingContext -and -not $Force) {
-            throw "Context with ID '$NewID' already exists$(if ($Vault) { " in vault '$Vault'" })."
+            throw "Context with ID '$NewID' already exists in vault '$Vault'"
         }
 
-        if ($PSCmdlet.ShouldProcess("Renaming context '$ID' to '$NewID'$(if ($Vault) { " in vault '$Vault'" })")) {
+        if ($PSCmdlet.ShouldProcess("Renaming context '$ID' to '$NewID' in vault '$Vault'")) {
             $context | Set-Context -ID $NewID -Vault $Vault
             Remove-Context -ID $ID -Vault $Vault
         }

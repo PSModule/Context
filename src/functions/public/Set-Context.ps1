@@ -72,12 +72,12 @@ function Set-Context {
 
     begin {
         $stackPath = Get-PSCallStackPath
-        Write-Debug "[$stackPath] - Start"
+        Write-Debug "[$stackPath] - Begin"
     }
 
     process {
         $vaultObject = Set-ContextVault -Name $Vault
-        Write-Verbose "$($vaultObject | Format-List | Out-String)"
+        $vaultObject | Format-List | Out-String -Stream | ForEach-Object { Write-Verbose "[$stackPath]   $_" }
 
         if ($context -is [System.Collections.IDictionary]) {
             $Context = [PSCustomObject]$Context
@@ -92,7 +92,7 @@ function Set-Context {
 
         $contextInfo = Get-ContextInfo -ID $ID -Vault $Vault
         Write-Verbose 'Context info:'
-        $contextInfo | Format-List | Out-String -Stream | ForEach-Object { Write-Verbose $_ }
+        $contextInfo | Format-List | Out-String -Stream | ForEach-Object { Write-Verbose "[$stackPath]   $_" }
         if (-not $contextInfo) {
             Write-Verbose "[$stackPath] - Creating context [$ID] in [$Vault]"
             $guid = [Guid]::NewGuid().Guid
@@ -112,7 +112,7 @@ function Set-Context {
             Context = ConvertTo-SodiumSealedBox -Message $contextJson -PublicKey $keys.PublicKey
         } | ConvertTo-Json -Depth 5
         Write-Verbose 'Content:'
-        $content | ConvertTo-Json -Depth 5 | Out-String -Stream | ForEach-Object { Write-Verbose $_ }
+        $content | ConvertTo-Json -Depth 5 | Out-String -Stream | ForEach-Object { Write-Verbose "[$stackPath]   $_" }
 
         if ($PSCmdlet.ShouldProcess("file: [$contextPath]", 'Set content')) {
             Write-Verbose "[$stackPath] - Setting context [$ID] in vault [$Vault]"
