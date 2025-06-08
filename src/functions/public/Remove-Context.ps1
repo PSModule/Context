@@ -105,7 +105,7 @@
             if ($PSCmdlet.ShouldProcess("Context '$contextId'", 'Remove')) {
                 Write-Debug "[$stackPath] - Removing context [$contextId]"
                 $contextInfo.Path | Remove-Item -Force -ErrorAction Stop
-                Write-Output "Removed item: $contextId"
+                Write-Debug "Removed item: $contextId"
             }
         }
     }

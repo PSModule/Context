@@ -115,8 +115,10 @@
                 Write-Debug "[$stackPath] - Processing file: $($file.FullName)"
                 $contextInfo | Format-List | Out-String -Stream | ForEach-Object { Write-Debug "[$stackPath]   $_" }
             }
-            if ($contextInfo.ID -like $ID) {
-                $contextInfo
+            foreach ($IDItem in $ID) {
+                if ($contextInfo.ID -like $IDItem) {
+                    $contextInfo
+                }
             }
         }
     }

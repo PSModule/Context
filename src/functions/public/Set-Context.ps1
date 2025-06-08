@@ -77,7 +77,7 @@ function Set-Context {
 
     process {
         $vaultObject = Set-ContextVault -Name $Vault
-        Write-Verbose "$($vaultObject | Format-List | Out-String)"
+        $vaultObject | Format-List | Out-String -Stream | ForEach-Object { Write-Debug $_ }
 
         if ($context -is [System.Collections.IDictionary]) {
             $Context = [PSCustomObject]$Context
