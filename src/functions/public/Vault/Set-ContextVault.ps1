@@ -25,7 +25,11 @@ function Set-ContextVault {
         # The name of the vault to create or update.
         [Parameter(Mandatory, ValueFromPipeline, ValueFromPipelineByPropertyName)]
         [ArgumentCompleter({ Complete-ContextVaultName @args })]
-        [string[]] $Name
+        [string[]] $Name,
+
+        # Pass the context through the pipeline.
+        [Parameter()]
+        [switch] $PassThru
     )
 
     begin {
@@ -52,7 +56,9 @@ function Set-ContextVault {
                 }
             }
 
-            [ContextVault]::new($vaultName, $vaultPath)
+            if ($PassThru) {
+                [ContextVault]::new($vaultName, $vaultPath)
+            }
         }
     }
 
