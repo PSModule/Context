@@ -179,6 +179,15 @@ Describe 'Context' {
             { Get-Context -ID $null -Vault 'VaultA' } | Should -Not -Throw
             Get-Context -ID $null -Vault 'VaultA' | Should -BeNullOrEmpty
         }
+        It "Get-Context -ID array - Should return only specified contexts in VaultA" {
+            $ids = @('TestID1', 'TestID2')
+            $results = Get-Context -ID $ids -Vault 'VaultA'
+            $results | Should -Not -BeNullOrEmpty
+            $results.Count | Should -Be 2
+            $results.ID | Should -Contain 'TestID1'
+            $results.ID | Should -Contain 'TestID2'
+            $results.ID | Should -Not -Contain 'TestID3'
+        }
     }
 
     Context 'Remove-Context' {
@@ -303,6 +312,16 @@ Describe 'Context' {
         It 'Should return no results for non-existent context ID in VaultA' {
             $result = Get-ContextInfo -ID 'NonExistentContext' -Vault 'VaultA'
             $result | Should -BeNullOrEmpty
+        }
+
+        It 'Should return only specified contexts for multiple IDs in VaultA' {
+            $ids = @('TestID1', 'TestID2')
+            $results = Get-ContextInfo -ID $ids -Vault 'VaultA'
+            $results | Should -Not -BeNullOrEmpty
+            $results.Count | Should -Be 2
+            $results.ID | Should -Contain 'TestID1'
+            $results.ID | Should -Contain 'TestID2'
+            $results.ID | Should -Not -Contain 'TestID3'
         }
     }
 }
