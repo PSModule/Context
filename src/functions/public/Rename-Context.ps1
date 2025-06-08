@@ -61,7 +61,11 @@
         # The name of the vault containing the context.
         [Parameter()]
         [ArgumentCompleter({ Complete-ContextVaultName @args })]
-        [string] $Vault
+        [string] $Vault,
+
+        # Pass the context through the pipeline.
+        [Parameter()]
+        [switch] $PassThru
     )
 
     begin {
@@ -81,7 +85,7 @@
         }
 
         if ($PSCmdlet.ShouldProcess("Renaming context '$ID' to '$NewID' in vault '$Vault'")) {
-            $context | Set-Context -ID $NewID -Vault $Vault
+            $context | Set-Context -ID $NewID -Vault $Vault -PassThru:$PassThru
             Remove-Context -ID $ID -Vault $Vault
         }
     }
