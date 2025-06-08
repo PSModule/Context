@@ -188,6 +188,31 @@ Describe 'Context' {
             $results.ID | Should -Contain 'TestID2'
             $results.ID | Should -Not -Contain 'TestID3'
         }
+        It 'Get-Context -ID single - Should not have output leakage (returns only one context)' {
+            $id = 'TestID1'
+            $results = Get-Context -ID $id -Vault 'VaultA'
+            $results | Should -Not -BeNullOrEmpty
+            $results.Count | Should -Be 1
+            $results.ID | Should -Be $id
+        }
+        It 'Get-Context -ID single (nonexistent) - Should not have output leakage (returns nothing)' {
+            $id = 'NonExistentContext'
+            $results = Get-Context -ID $id -Vault 'VaultA'
+            $results | Should -BeNullOrEmpty
+        }
+        It 'Get-Context -ID array with one valid and one invalid - Should not have output leakage (returns only valid)' {
+            $ids = @('TestID1', 'NonExistentContext')
+            $results = Get-Context -ID $ids -Vault 'VaultA'
+            $results | Should -Not -BeNullOrEmpty
+            $results.Count | Should -Be 1
+            $results.ID | Should -Be 'TestID1'
+        }
+        It 'Get-Context -ID with whitespace or null - Should not have output leakage (returns nothing)' {
+            $results = Get-Context -ID '   ' -Vault 'VaultA'
+            $results | Should -BeNullOrEmpty
+            $results = Get-Context -ID $null -Vault 'VaultA'
+            $results | Should -BeNullOrEmpty
+        }
     }
 
     Context 'Remove-Context' {
