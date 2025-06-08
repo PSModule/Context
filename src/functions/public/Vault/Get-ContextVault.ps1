@@ -39,7 +39,7 @@
 
     begin {
         $stackPath = Get-PSCallStackPath
-        Write-Debug "[$stackPath] - Start"
+        Write-Debug "[$stackPath] - Begin"
         if (-not (Test-Path -Path $script:Config.RootPath)) {
             return
         }

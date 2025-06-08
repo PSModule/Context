@@ -66,7 +66,7 @@
 
     begin {
         $stackPath = Get-PSCallStackPath
-        Write-Debug "[$stackPath] - Start"
+        Write-Debug "[$stackPath] - Begin"
     }
 
     process {
