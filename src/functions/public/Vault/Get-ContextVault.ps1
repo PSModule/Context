@@ -22,12 +22,12 @@
         Gets information about all vaults starting with 'My'.
 
         .OUTPUTS
-        [ContextVault[]]
+        ContextVault
 
         .LINK
         https://psmodule.io/Context/Functions/Vault/Get-ContextVault/
     #>
-    [OutputType([ContextVault[]])]
+    [OutputType([ContextVault])]
     [CmdletBinding()]
     param(
         # The name of the vault to retrieve. Supports wildcards.
