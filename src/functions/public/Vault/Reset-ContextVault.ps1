@@ -23,7 +23,7 @@
     param(
         # The name of the vault to reset.
         [Parameter(ValueFromPipeline, ValueFromPipelineByPropertyName, ParameterSetName = 'By Name')]
-        [ArgumentCompleter({ Complete-ContextVaultName @args })]
+        [ArgumentCompleter($script:CompleteContextVaultName)]
         [SupportsWildcards()]
         [string[]] $Name = '*',
 

@@ -32,7 +32,7 @@
     param(
         # The name of the vault to retrieve. Supports wildcards.
         [Parameter()]
-        [ArgumentCompleter({ Complete-ContextVaultName @args })]
+        [ArgumentCompleter($script:CompleteContextVaultName)]
         [SupportsWildcards()]
         [string[]] $Name = '*'
     )

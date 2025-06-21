@@ -1,12 +1,4 @@
-﻿function Complete-ContextVaultName {
-    <#
-        .SYNOPSIS
-        Completion function for Context Vault Name parameter.
-
-        .DESCRIPTION
-        Provides tab completion for Context Vault names.
-    #>
-    [CmdletBinding()]
+﻿$script:CompleteContextVaultName = {
     param(
         $commandName,
         $parameterName,

@@ -19,7 +19,7 @@
     param(
         # The name of the vault to remove.
         [Parameter(Mandatory, ValueFromPipeline, ValueFromPipelineByPropertyName, ParameterSetName = 'By Name')]
-        [ArgumentCompleter({ Complete-ContextVaultName @args })]
+        [ArgumentCompleter($script:CompleteContextVaultName)]
         [SupportsWildcards()]
         [string[]] $Name,
 

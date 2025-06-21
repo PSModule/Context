@@ -1,12 +1,4 @@
-﻿function Complete-ContextID {
-    <#
-        .SYNOPSIS
-        Completion function for Context ID parameter.
-
-        .DESCRIPTION
-        Provides tab completion for Context IDs, optionally filtered by vault.
-    #>
-    [CmdletBinding()]
+﻿$script:CompleteContextID = {
     param(
         $commandName,
         $parameterName,

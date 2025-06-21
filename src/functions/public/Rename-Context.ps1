@@ -47,7 +47,7 @@
             ValueFromPipeline,
             ValueFromPipelineByPropertyName
         )]
-        [ArgumentCompleter({ Complete-ContextID @args })]
+        [ArgumentCompleter($script:CompleteContextID)]
         [string] $ID,
 
         # The new ID of the context.
@@ -60,7 +60,7 @@
 
         # The name of the vault containing the context.
         [Parameter()]
-        [ArgumentCompleter({ Complete-ContextVaultName @args })]
+        [ArgumentCompleter($script:CompleteContextVaultName)]
         [string] $Vault,
 
         # Pass the context through the pipeline.
