@@ -39,6 +39,7 @@
     begin {
         $stackPath = Get-PSCallStackPath
         Write-Debug "[$stackPath] - Begin"
+        $vaults = Get-ContextVault
     }
 
     process {
