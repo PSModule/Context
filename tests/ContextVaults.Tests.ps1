@@ -194,6 +194,35 @@ Describe 'ContextVault' {
         It 'Should not throw when resetting non-existent vault' {
             { Reset-ContextVault -Name 'nonexistent-vault' -Confirm:$false } | Should -Not -Throw
         }
+
+        It 'Should remove all contexts from the vault after reset' {
+            $vaultName = 'reset-context-test'
+            Get-ContextVault -Name $vaultName | Remove-ContextVault -Confirm:$false
+            Set-ContextVault -Name $vaultName | Out-Null
+            Set-Context -ID 'myid' -Context @{ Foo = 'Bar' } -Vault $vaultName | Out-Null
+            (Get-Context -Vault $vaultName) | Should -Not -BeNullOrEmpty
+
+            Reset-ContextVault -Name $vaultName -Confirm:$false | Out-Null
+
+            $contexts = Get-Context -Vault $vaultName
+            $contexts | Should -BeNullOrEmpty
+        }
+
+        It 'Should reset the shard file after reset' {
+            $vaultName = 'reset-shard-test'
+            Get-ContextVault -Name $vaultName | Remove-ContextVault -Confirm:$false
+            Set-ContextVault -Name $vaultName | Out-Null
+            $vault = Get-ContextVault -Name $vaultName
+            $shardPath = Join-Path -Path $vault.Path -ChildPath 'shard'
+            $shardBefore = Get-Content -Path $shardPath -Raw
+
+            Reset-ContextVault -Name $vaultName -Confirm:$false | Out-Null
+            $shardAfter = Get-Content -Path $shardPath -Raw
+
+            $shardBefore | Should -Not -BeNullOrEmpty
+            $shardAfter | Should -Not -BeNullOrEmpty
+            $shardBefore | Should -Not -Be $shardAfter
+        }
     }
 
     Context 'Pipeline and Combined Operations' {
