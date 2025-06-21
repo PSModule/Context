@@ -66,7 +66,7 @@ function Set-Context {
 
         # The name of the vault to store the context in.
         [Parameter(Mandatory)]
-        [ArgumentCompleter($script:CompleteContextVaultName)]
+        [ArgumentCompleter({ & $script:CompleteContextVaultName @args })]
         [string] $Vault,
 
         # Pass the context through the pipeline.
