@@ -82,13 +82,11 @@
             ValueFromPipeline,
             ValueFromPipelineByPropertyName
         )]
-        [ArgumentCompleter({ & $script:CompleteContextID @args })]
         [SupportsWildcards()]
         [string[]] $ID,
 
         # The name of the vault to remove contexts from.
         [Parameter()]
-        [ArgumentCompleter({ & $script:CompleteContextVaultName @args })]
         [string] $Vault
     )
 

@@ -65,13 +65,11 @@
     param(
         # The name of the context to retrieve from the vault. Supports wildcards.
         [Parameter()]
-        [ArgumentCompleter({ & $script:CompleteContextID @args })]
         [SupportsWildcards()]
         [string[]] $ID = '*',
 
         # The name of the vault to retrieve context info from. Supports wildcards.
         [Parameter()]
-        [ArgumentCompleter({ & $script:CompleteContextVaultName @args })]
         [string[]] $Vault = '*'
     )
 

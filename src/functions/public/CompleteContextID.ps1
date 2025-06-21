@@ -1,13 +1,5 @@
-﻿$script:CompleteContextID = {
-    param(
-        $commandName,
-        $parameterName,
-        $wordToComplete,
-        $commandAst,
-        $fakeBoundParameter
-    )
-    $null = $commandName, $parameterName, $wordToComplete, $commandAst, $fakeBoundParameter
-
+﻿$contextIDCompleter = {
+    param($commandName, $parameterName, $wordToComplete, $commandAst, $fakeBoundParameter)
     $vault = $fakeBoundParameter['Vault']
     $contextInfos = if ($vault) {
         Get-ContextInfo -Vault $vault -ErrorAction SilentlyContinue -Verbose:$false -Debug:$false
@@ -18,3 +10,5 @@
         [System.Management.Automation.CompletionResult]::new($_.ID, $_.ID, 'ParameterValue', $_.ID)
     }
 }
+
+Register-ArgumentCompleter -CommandName $script:PSModuleInfo.FunctionsToExport -ParameterName 'ID' -ScriptBlock $contextIDCompleter
