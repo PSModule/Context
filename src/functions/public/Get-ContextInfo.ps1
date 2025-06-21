@@ -17,18 +17,10 @@
         ID                 Path
         --                 ----
         MySettings         C:\Users\<username>\.contextvaults\Vaults\Contexts\b7c01dbe-bccd-4c7e-b075-c5aac1c43b1a.json
-
-        ID   : MyConfig
-        Path : ...\feacc853-5bea-48d1-b751-41ce9768d48e.json
-
-        ID   : MySecret
-        Path : ...\3e223259-f242-4e97-91c8-f0fd054cfea7.json
-
-        ID   : Data
-        Path : ...\b7c01dbe-bccd-4c7e-b075-c5aac1c43b1a.json
-
-        ID   : PSModule.GitHub
-        Path : ...\feacc853-5bea-48d1-b751-41ce9768d48e.json
+        MyConfig           C:\Users\<username>\.contextvaults\Vaults\Contexts\feacc853-5bea-48d1-b751-41ce9768d48e.json
+        MySecret           C:\Users\<username>\.contextvaults\Vaults\Contexts\3e223259-f242-4e97-91c8-f0fd054cfea7.json
+        Data               C:\Users\<username>\.contextvaults\Vaults\Contexts\b7c01dbe-bccd-4c7e-b075-c5aac1c43b1a.json
+        PSModule.GitHub    C:\Users\<username>\.contextvaults\Vaults\Contexts\feacc853-5bea-48d1-b751-41ce9768d48e.json
         ```
 
         Retrieves all contexts from the context vault (directly from disk).
@@ -49,14 +41,11 @@
 
         Output:
         ```powershell
-        ID   : MyConfig
-        Path : .../feacc853-5bea-48d1-b751-41ce9768d48e.json
-
-        ID   : MySecret
-        Path : .../3e223259-f242-4e97-91c8-f0fd054cfea7.json
-
-        ID   : MySettings
-        Path : .../b7c01dbe-bccd-4c7e-b075-c5aac1c43b1a.json
+        ID                 Path
+        --                 ----
+        MyConfig           C:\Users\<username>\.contextvaults\Vaults\Contexts\feacc853-5bea-48d1-b751-41ce9768d48e.json
+        MySecret           C:\Users\<username>\.contextvaults\Vaults\Contexts\3e223259-f242-4e97-91c8-f0fd054cfea7.json
+        MySettings         C:\Users\<username>\.contextvaults\Vaults\Contexts\b7c01dbe-bccd-4c7e-b075-c5aac1c43b1a.json
         ```
 
         Retrieves all contexts that start with 'My' from the context vault (directly from disk).
