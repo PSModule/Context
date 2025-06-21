@@ -6,7 +6,6 @@
         $commandAst,
         $fakeBoundParameter
     )
-
     $null = $commandName, $parameterName, $wordToComplete, $commandAst, $fakeBoundParameter
 
     $vault = $fakeBoundParameter['Vault']
