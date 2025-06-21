@@ -95,13 +95,11 @@ function Get-Context {
             ValueFromPipeline,
             ValueFromPipelineByPropertyName
         )]
-        [ArgumentCompleter({ Complete-ContextID @args })]
         [SupportsWildcards()]
         [string[]] $ID = '*',
 
         # The name of the vault to store the context in.
         [Parameter()]
-        [ArgumentCompleter({ Complete-ContextVaultName @args })]
         [SupportsWildcards()]
         [string[]] $Vault = '*'
     )
