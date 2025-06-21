@@ -1,5 +1,6 @@
 ﻿$contextIDCompleter = {
     param($commandName, $parameterName, $wordToComplete, $commandAst, $fakeBoundParameter)
+    $null = $commandName, $parameterName, $wordToComplete, $commandAst, $fakeBoundParameter
     $vault = $fakeBoundParameter['Vault']
     $contextInfos = if ($vault) {
         Get-ContextInfo -Vault $vault -ErrorAction SilentlyContinue -Verbose:$false -Debug:$false
