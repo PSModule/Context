@@ -14,13 +14,13 @@
 
         Output:
         ```powershell
-        ID                 Path
-        --                 ----
-        MySettings         C:\Users\<username>\.contextvaults\Vaults\Contexts\b7c01dbe-bccd-4c7e-b075-c5aac1c43b1a.json
-        MyConfig           C:\Users\<username>\.contextvaults\Vaults\Contexts\feacc853-5bea-48d1-b751-41ce9768d48e.json
-        MySecret           C:\Users\<username>\.contextvaults\Vaults\Contexts\3e223259-f242-4e97-91c8-f0fd054cfea7.json
-        Data               C:\Users\<username>\.contextvaults\Vaults\Contexts\b7c01dbe-bccd-4c7e-b075-c5aac1c43b1a.json
-        PSModule.GitHub    C:\Users\<username>\.contextvaults\Vaults\Contexts\feacc853-5bea-48d1-b751-41ce9768d48e.json
+        ID                 Vault
+        --                 -----
+        MySettings         MyVault
+        MyConfig           MyVault
+        MySecret           MyVault
+        Data               MyVault
+        PSModule.GitHub    MyVault
         ```
 
         Retrieves all contexts from the context vault (directly from disk).
@@ -41,17 +41,17 @@
 
         Output:
         ```powershell
-        ID                 Path
-        --                 ----
-        MyConfig           C:\Users\<username>\.contextvaults\Vaults\Contexts\feacc853-5bea-48d1-b751-41ce9768d48e.json
-        MySecret           C:\Users\<username>\.contextvaults\Vaults\Contexts\3e223259-f242-4e97-91c8-f0fd054cfea7.json
-        MySettings         C:\Users\<username>\.contextvaults\Vaults\Contexts\b7c01dbe-bccd-4c7e-b075-c5aac1c43b1a.json
+        ID                 Vault
+        --                 -----
+        MyConfig           MyVault
+        MySecret           MyVault
+        MySettings         MyVault
         ```
 
         Retrieves all contexts that start with 'My' from the context vault (directly from disk).
 
         .OUTPUTS
-        [PSCustomObject]
+        [ContextInfo]
 
         .NOTES
         Returns a list of context information matching the specified ID or all contexts if no ID is specified.
@@ -60,7 +60,7 @@
         .LINK
         https://psmodule.io/Context/Functions/Get-ContextInfo/
     #>
-    [OutputType([PSCustomObject])]
+    [OutputType([ContextInfo])]
     [CmdletBinding()]
     param(
         # The name of the context to retrieve from the vault. Supports wildcards.
@@ -95,7 +95,7 @@
             $contextInfo | Format-List | Out-String -Stream | ForEach-Object { Write-Verbose "[$stackPath]   $_" }
             foreach ($IDItem in $ID) {
                 if ($contextInfo.ID -like $IDItem) {
-                    $contextInfo
+                    [ContextInfo]::new($contextInfo)
                 }
             }
         }
