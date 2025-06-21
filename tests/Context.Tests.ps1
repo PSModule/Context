@@ -310,14 +310,14 @@ Describe 'Context' {
             $results = Get-ContextInfo
             $results | Should -Not -BeNullOrEmpty
             $results | Should -HaveCount 5
-            $results | ForEach-Object { $_ | Should -BeOfType [PSCustomObject] }
+            $results | ForEach-Object { $_ | Should -BeOfType [ContextInfo] }
         }
 
         It 'Should return all contexts in VaultA' {
             $results = Get-ContextInfo -Vault 'VaultA'
             $results | Should -Not -BeNullOrEmpty
             $results | Should -HaveCount 3
-            $results | ForEach-Object { $_ | Should -BeOfType [PSCustomObject] }
+            $results | ForEach-Object { $_ | Should -BeOfType [ContextInfo] }
         }
 
         It 'Should return specific context by ID in VaultA' {
