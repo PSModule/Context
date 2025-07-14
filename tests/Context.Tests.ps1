@@ -236,6 +236,22 @@ Describe 'Context' {
             { 'john_doe' | Remove-Context -Vault 'VaultA' } | Should -Not -Throw
             Get-Context -ID 'john_doe' -Vault 'VaultA' | Should -BeNullOrEmpty
         }
+        It 'Get-Context | Remove-Context - Should remove all contexts from VaultA' {
+            # Setup: Create multiple contexts in VaultA
+            Set-Context -ID 'TestContext1' -Context @{ Data = 'Test1' } -Vault 'VaultA'
+            Set-Context -ID 'TestContext2' -Context @{ Data = 'Test2' } -Vault 'VaultA'
+            Set-Context -ID 'TestContext3' -Context @{ Data = 'Test3' } -Vault 'VaultA'
+
+            $contextsBefore = Get-Context -Vault 'VaultA'
+            $contextsBefore | Should -Not -BeNullOrEmpty
+            $contextsBefore.Count | Should -BeGreaterThan 0
+
+            { Get-Context | Remove-Context } | Should -Not -Throw
+
+            # Verify all contexts are removed
+            $contextsAfter = Get-Context
+            $contextsAfter | Should -BeNullOrEmpty
+        }
     }
 
     Context 'Rename-Context' {
