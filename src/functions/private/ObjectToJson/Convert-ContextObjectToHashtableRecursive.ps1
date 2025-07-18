@@ -68,6 +68,11 @@
                 $value = $property.Value
                 Write-Debug "Processing [$name]"
                 Write-Debug "Value: $value"
+                if ($null -eq $value) {
+                    Write-Debug '- as null value'
+                    $result[$property.Name] = $null
+                    continue
+                }
                 Write-Debug "Type:  $($value.GetType().Name)"
                 if ($value -is [datetime]) {
                     Write-Debug '- as DateTime'

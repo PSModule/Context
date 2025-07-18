@@ -66,6 +66,11 @@
                 $value = $Hashtable[$key]
                 Write-Debug "Processing [$key]"
                 Write-Debug "Value: $value"
+                if ($null -eq $value) {
+                    Write-Debug "- as null value"
+                    $result | Add-Member -NotePropertyName $key -NotePropertyValue $null
+                    continue
+                }
                 Write-Debug "Type:  $($value.GetType().Name)"
                 if ($value -is [string] -and $value -like '`[SECURESTRING`]*') {
                     Write-Debug "Converting [$key] as [SecureString]"

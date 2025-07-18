@@ -40,22 +40,27 @@ Describe 'Context' {
             $result.ID | Should -Be 'TestID1'
         }
         It "Set-Context -ID 'TestID2' -Context @{} -Vault 'VaultA'" {
-            { Set-Context -ID 'TestID2' -Context @{} -Vault 'VaultA' } | Should -Not -Throw
+            { Set-Context -ID 'TestID2' -Context @{ NullProperty = $null; StringProperty = 'test' } -Vault 'VaultA' } | Should -Not -Throw
             $result = Get-Context -ID 'TestID2' -Vault 'VaultA'
             $result | Should -Not -BeNullOrEmpty
             $result.ID | Should -Be 'TestID2'
+            $result.NullProperty | Should -BeNull
+            $result.StringProperty | Should -Be 'test'
         }
         It "Set-Context -ID 'TestID2' -Context @{} - Again -Vault 'VaultA'" {
-            { Set-Context -ID 'TestID2' -Context @{} -Vault 'VaultA' } | Should -Not -Throw
+            { Set-Context -ID 'TestID2' -Context @{ NullProperty = $null; StringProperty = 'updated' } -Vault 'VaultA' } | Should -Not -Throw
             $result = Get-Context -ID 'TestID2' -Vault 'VaultA'
             $result | Should -Not -BeNullOrEmpty
             $result.ID | Should -Be 'TestID2'
+            $result.NullProperty | Should -BeNull
+            $result.StringProperty | Should -Be 'updated'
         }
         It "Set-Context -ID 'john_doe' -Context [advanced object] -Vault 'VaultA'" {
             $contextData = [PSCustomObject]@{
                 Username          = 'john_doe'
                 AuthToken         = 'ghp_12345ABCDE67890FGHIJ' | ConvertTo-SecureString -AsPlainText -Force #gitleaks:allow
                 LoginTime         = Get-Date
+                MyNullValue       = $null
                 IsTwoFactorAuth   = $true
                 TwoFactorMethods  = @('TOTP', 'SMS')
                 LastLoginAttempts = @(
@@ -124,6 +129,7 @@ Describe 'Context' {
             $context.AuthToken | Should -BeOfType [System.Security.SecureString]
             $context.AuthToken | ConvertFrom-SecureString -AsPlainText | Should -Be 'ghp_12345ABCDE67890FGHIJ'
             $context.LoginTime | Should -BeOfType [System.DateTime]
+            $context.MyNullValue | Should -BeNull
             $context.IsTwoFactorAuth | Should -Be $true
             $context.TwoFactorMethods | Should -Be @('TOTP', 'SMS')
             $context.LastLoginAttempts | Should -BeOfType [PSCustomObject]
@@ -154,16 +160,52 @@ Describe 'Context' {
             $context.SessionMetaData.BrowserInfo.Name | Should -Be 'Chrome'
             $context.SessionMetaData.BrowserInfo.Version | Should -Be '118.0.1'
         }
+        It "Set-Context -ID 'null_test' -Context [object with null values] -Vault 'VaultA'" {
+            $contextData = [PSCustomObject]@{
+                StringValue   = 'NotNull'
+                NullValue1    = $null
+                EmptyString   = ''
+                ZeroValue     = 0
+                FalseValue    = $false
+                NullValue2    = $null
+                ArrayWithNull = @('value1', $null, 'value3')
+                NestedObject  = [PSCustomObject]@{
+                    Property1 = 'value'
+                    NullProp  = $null
+                    Property2 = 42
+                }
+            }
+
+            { Set-Context -ID 'null_test' -Context $contextData -Vault 'VaultA' } | Should -Not -Throw
+            $context = Get-Context -ID 'null_test' -Vault 'VaultA'
+            $context | Should -Not -BeNullOrEmpty
+            $context.ID | Should -Be 'null_test'
+            $context.StringValue | Should -Be 'NotNull'
+            $context.NullValue1 | Should -BeNull
+            $context.EmptyString | Should -Be ''
+            $context.ZeroValue | Should -Be 0
+            $context.FalseValue | Should -Be $false
+            $context.NullValue2 | Should -BeNull
+            $context.ArrayWithNull | Should -Not -BeNull
+            $context.ArrayWithNull.Count | Should -Be 3
+            $context.ArrayWithNull[0] | Should -Be 'value1'
+            $context.ArrayWithNull[1] | Should -BeNull
+            $context.ArrayWithNull[2] | Should -Be 'value3'
+            $context.NestedObject | Should -Not -BeNull
+            $context.NestedObject.Property1 | Should -Be 'value'
+            $context.NestedObject.NullProp | Should -BeNull
+            $context.NestedObject.Property2 | Should -Be 42
+        }
     }
 
     Context 'Get-Context' {
         It 'Get-Context - Should return all contexts in VaultA' {
             Write-Host (Get-Context -Vault 'VaultA' | Out-String)
-            (Get-Context -Vault 'VaultA').Count | Should -Be 3
+            (Get-Context -Vault 'VaultA').Count | Should -Be 4
         }
         It "Get-Context -ID '*' - Should return all contexts in VaultA" {
             Write-Host (Get-Context -ID '*' -Vault 'VaultA' | Out-String)
-            (Get-Context -ID '*' -Vault 'VaultA').Count | Should -Be 3
+            (Get-Context -ID '*' -Vault 'VaultA').Count | Should -Be 4
         }
         It "Get-Context -ID 'TestID*' - Should return all contexts in VaultA" {
             Write-Host (Get-Context -ID 'TestID*' -Vault 'VaultA' | Out-String)
@@ -271,8 +313,9 @@ Describe 'Context' {
 
         It 'Sets a context where the ID is in the context data in VaultA' {
             $contextData = [PSCustomObject]@{
-                ID   = 'TestContext'
-                Data = 'Some data'
+                ID        = 'TestContext'
+                Data      = 'Some data'
+                NullValue = $null
             }
 
             { Set-Context -Context $contextData -Vault 'VaultA' } | Should -Not -Throw
@@ -280,6 +323,7 @@ Describe 'Context' {
             $result | Should -Not -BeNullOrEmpty
             $result.ID | Should -Be 'TestContext'
             $result.Data | Should -Be 'Some data'
+            $result.NullValue | Should -BeNull
         }
 
         It 'Renaming a context to an existing context does not throw with force in VaultA' {
