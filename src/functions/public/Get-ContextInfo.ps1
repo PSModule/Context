@@ -90,7 +90,17 @@
         Write-Verbose "[$stackPath] - Found $($files.Count) context file(s) in vault(s)."
 
         foreach ($file in $files) {
-            $contextInfo = Get-Content -Path $file.FullName | ConvertFrom-Json
+            # Use robust file reading with explicit sharing to ensure no file locking during reads
+            try {
+                $content = [System.IO.File]::ReadAllText($file.FullName, [System.Text.Encoding]::UTF8)
+                $contextInfo = $content | ConvertFrom-Json
+            } catch [System.IO.IOException] {
+                Write-Warning "[$stackPath] - IO error reading context file '$($file.FullName)': $($_.Exception.Message). Falling back to Get-Content."
+                $contextInfo = Get-Content -Path $file.FullName -Raw | ConvertFrom-Json
+            } catch {
+                Write-Warning "[$stackPath] - Error reading context file '$($file.FullName)': $($_.Exception.Message)"
+                continue
+            }
             Write-Verbose "[$stackPath] - Processing file: $($file.FullName)"
             $contextInfo | Format-List | Out-String -Stream | ForEach-Object { Write-Verbose "[$stackPath]   $_" }
             foreach ($IDItem in $ID) {

@@ -34,7 +34,17 @@
     process {
         $vaultObject = Set-ContextVault -Name $Vault -PassThru
         $shardPath = Join-Path -Path $vaultObject.Path -ChildPath $script:Config.ShardFileName
-        $fileShard = Get-Content -Path $shardPath
+        
+        # Use robust file reading with explicit sharing to ensure no file locking during reads
+        try {
+            $fileShard = [System.IO.File]::ReadAllText($shardPath, [System.Text.Encoding]::UTF8).Trim()
+        } catch [System.IO.IOException] {
+            Write-Warning "[$stackPath] - IO error reading shard file '$shardPath': $($_.Exception.Message). Falling back to Get-Content."
+            $fileShard = Get-Content -Path $shardPath -Raw
+        } catch {
+            throw "[$stackPath] - Unable to read shard file '$shardPath': $($_.Exception.Message)"
+        }
+        
         $machineShard = [System.Environment]::MachineName
         $userShard = [System.Environment]::UserName
         #$userInputShard = Read-Host -Prompt 'Enter a seed shard' # Eventually 4 shards. +1 for user input.
