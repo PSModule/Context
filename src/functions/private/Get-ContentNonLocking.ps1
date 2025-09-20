@@ -1,0 +1,87 @@
+function Get-ContentNonLocking {
+    <#
+        .SYNOPSIS
+        Reads file content without locking the file for other processes.
+
+        .DESCRIPTION
+        Uses FileStream with explicit sharing flags to read file content while allowing
+        other processes to read, write, or delete the file concurrently. This prevents
+        file locking conflicts in multi-process scenarios. Includes automatic fallback
+        to Get-Content if FileStream access fails.
+
+        .EXAMPLE
+        Get-ContentNonLocking -Path 'C:\data\file.txt'
+
+        Reads the content of the file without locking it.
+
+        .EXAMPLE
+        Get-ContentNonLocking -Path 'C:\data\file.json' | ConvertFrom-Json
+
+        Reads a JSON file without locking it and converts it to an object.
+
+        .OUTPUTS
+        string
+
+        .NOTES
+        This function uses System.IO.FileStream with FileShare.ReadWrite and FileShare.Delete
+        flags to ensure maximum concurrency while reading files. If FileStream access fails,
+        it automatically falls back to Get-Content for compatibility.
+    #>
+    [CmdletBinding()]
+    param(
+        # The path to the file to read.
+        [Parameter(Mandatory)]
+        [string] $Path,
+
+        # The text encoding to use when reading the file. Defaults to UTF8.
+        [Parameter()]
+        [System.Text.Encoding] $Encoding = [System.Text.Encoding]::UTF8
+    )
+
+    begin {
+        $stackPath = Get-PSCallStackPath
+        Write-Debug "[$stackPath] - Begin"
+    }
+
+    process {
+        try {
+            Write-Verbose "[$stackPath] - Reading file without locking: $Path"
+
+            # Open the file in read mode but allow others to read/write/delete at the same time
+            $stream = [System.IO.FileStream]::new(
+                $Path,
+                [System.IO.FileMode]::Open,
+                [System.IO.FileAccess]::Read,
+                [System.IO.FileShare]::ReadWrite -bor [System.IO.FileShare]::Delete
+            )
+
+            try {
+                $reader = [System.IO.StreamReader]::new($stream, $Encoding)
+                try {
+                    $content = $reader.ReadToEnd()
+                    return $content
+                } finally {
+                    $reader.Close()
+                }
+            } finally {
+                $stream.Close()
+            }
+        } catch [System.IO.IOException] {
+            Write-Warning "[$stackPath] - IO error reading file '$Path': $($_.Exception.Message). Falling back to Get-Content."
+            try {
+                $content = Get-Content -Path $Path -Raw -Encoding $Encoding
+                return $content
+            } catch {
+                Write-Debug "[$stackPath] - Fallback also failed: $($_.Exception.Message)"
+                throw
+            }
+        } catch {
+            Write-Debug "[$stackPath] - Error reading file: $($_.Exception.Message)"
+            throw
+        }
+    }
+
+    end {
+        Write-Debug "[$stackPath] - End"
+    }
+}

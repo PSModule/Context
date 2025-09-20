@@ -90,9 +90,18 @@
         Write-Verbose "[$stackPath] - Found $($files.Count) context file(s) in vault(s)."
 
         foreach ($file in $files) {
-            $contextInfo = Get-Content -Path $file.FullName | ConvertFrom-Json
-            Write-Verbose "[$stackPath] - Processing file: $($file.FullName)"
-            $contextInfo | Format-List | Out-String -Stream | ForEach-Object { Write-Verbose "[$stackPath]   $_" }
+            # Use non-locking file reading to allow concurrent access
+            try {
+                $content = Get-ContentNonLocking -Path $file.FullName
+                $contextInfo = $content | ConvertFrom-Json
+            } catch {
+                Write-Warning "[$stackPath] - Error reading context file '$($file.FullName)': $($_.Exception.Message)"
+                continue
+            }
+            if ($VerbosePreference -eq 'Continue') {
+                Write-Verbose "[$stackPath] - Processing file: $($file.FullName)"
+                $contextInfo | Format-List | Out-String -Stream | ForEach-Object { Write-Verbose "[$stackPath] $_" }
+            }
             foreach ($IDItem in $ID) {
                 if ($contextInfo.ID -like $IDItem) {
                     [ContextInfo]::new($contextInfo)
