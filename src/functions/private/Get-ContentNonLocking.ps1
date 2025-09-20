@@ -6,7 +6,14 @@ function Get-ContentNonLocking {
         .DESCRIPTION
         Uses FileStream with explicit sharing flags to read file content while allowing
         other processes to read, write, or delete the file concurrently. This prevents
-        file locking conflicts in multi-process scenarios.
+        file locking conflicts in multi-process scenarios. Includes automatic fallback
+        to Get-Content if FileStream access fails.
+
+        .PARAMETER Path
+        The path to the file to read.
+
+        .PARAMETER Encoding
+        The text encoding to use when reading the file. Defaults to UTF8.
 
         .EXAMPLE
         Get-ContentNonLocking -Path 'C:\data\file.txt'
@@ -19,19 +26,18 @@ function Get-ContentNonLocking {
         Reads a JSON file without locking it and converts it to an object.
 
         .OUTPUTS
-        string
+        [string] The content of the file.
 
         .NOTES
         This function uses System.IO.FileStream with FileShare.ReadWrite and FileShare.Delete
-        flags to ensure maximum concurrency while reading files.
+        flags to ensure maximum concurrency while reading files. If FileStream access fails,
+        it automatically falls back to Get-Content for compatibility.
     #>
     [CmdletBinding()]
     param(
-        # The path to the file to read.
         [Parameter(Mandatory)]
         [string] $Path,
 
-        # The text encoding to use when reading the file.
         [Parameter()]
         [System.Text.Encoding] $Encoding = [System.Text.Encoding]::UTF8
     )
@@ -57,13 +63,23 @@ function Get-ContentNonLocking {
                 $reader = [System.IO.StreamReader]::new($stream, $Encoding)
                 try {
                     $content = $reader.ReadToEnd()
-                    Write-Debug "[$stackPath] - Successfully read $($content.Length) characters from file"
+                    Write-Debug "[$stackPath] - Successfully read $($content.Length) characters from file using FileStream"
                     return $content
                 } finally {
                     $reader.Close()
                 }
             } finally {
                 $stream.Close()
+            }
+        } catch [System.IO.IOException] {
+            Write-Warning "[$stackPath] - IO error reading file '$Path': $($_.Exception.Message). Falling back to Get-Content."
+            try {
+                $content = Get-Content -Path $Path -Raw -Encoding $Encoding
+                Write-Debug "[$stackPath] - Successfully read $($content.Length) characters from file using Get-Content fallback"
+                return $content
+            } catch {
+                Write-Debug "[$stackPath] - Fallback also failed: $($_.Exception.Message)"
+                throw
             }
         } catch {
             Write-Debug "[$stackPath] - Error reading file: $($_.Exception.Message)"

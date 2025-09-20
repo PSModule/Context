@@ -38,9 +38,6 @@
         # Use non-locking file reading to allow concurrent access
         try {
             $fileShard = (Get-ContentNonLocking -Path $shardPath).Trim()
-        } catch [System.IO.IOException] {
-            Write-Warning "[$stackPath] - IO error reading shard file '$shardPath': $($_.Exception.Message). Falling back to Get-Content."
-            $fileShard = Get-Content -Path $shardPath -Raw
         } catch {
             throw "[$stackPath] - Unable to read shard file '$shardPath': $($_.Exception.Message)"
         }
