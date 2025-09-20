@@ -42,14 +42,48 @@ function Set-ContextVault {
 
             $vaultPath = Join-Path -Path $script:Config.RootPath -ChildPath $vaultName
             if (-not (Test-Path $vaultPath)) {
-                Write-Verbose "Creating new vault [$($vault.Name)]"
+                Write-Verbose "Creating new vault [$vaultName]"
                 if ($PSCmdlet.ShouldProcess("context vault folder $vaultName", 'Set')) {
                     $null = New-Item -Path $vaultPath -ItemType Directory -Force
+                    
+                    # Create module and user subdirectories for new vault structure
+                    $moduleDir = Join-Path -Path $vaultPath -ChildPath 'module'
+                    $userDir = Join-Path -Path $vaultPath -ChildPath 'user'
+                    $null = New-Item -Path $moduleDir -ItemType Directory -Force
+                    $null = New-Item -Path $userDir -ItemType Directory -Force
+                    
+                    Write-Verbose "Created vault directories: module/ and user/"
+                }
+            } else {
+                # Check if this is a legacy vault and migrate it
+                $moduleDir = Join-Path -Path $vaultPath -ChildPath 'module'
+                $userDir = Join-Path -Path $vaultPath -ChildPath 'user'
+                
+                if (-not (Test-Path $moduleDir) -or -not (Test-Path $userDir)) {
+                    Write-Verbose "Migrating legacy vault [$vaultName] to new structure"
+                    if ($PSCmdlet.ShouldProcess("vault $vaultName", 'Migrate to new directory structure')) {
+                        # Create new directories if they don't exist
+                        if (-not (Test-Path $moduleDir)) {
+                            $null = New-Item -Path $moduleDir -ItemType Directory -Force
+                        }
+                        if (-not (Test-Path $userDir)) {
+                            $null = New-Item -Path $userDir -ItemType Directory -Force
+                        }
+                        
+                        # Move existing context files to user directory
+                        $contextFiles = Get-ChildItem -Path $vaultPath -Filter '*.json' -File
+                        foreach ($file in $contextFiles) {
+                            $newPath = Join-Path -Path $userDir -ChildPath $file.Name
+                            Move-Item -Path $file.FullName -Destination $newPath
+                            Write-Verbose "Migrated context file: $($file.Name) -> user/$($file.Name)"
+                        }
+                    }
                 }
             }
+            
             $fileShardPath = Join-Path -Path $vaultPath -ChildPath $script:Config.ShardFileName
             if (-not (Test-Path $fileShardPath)) {
-                Write-Verbose "Generating encryption keys for vault [$($vault.Name)]"
+                Write-Verbose "Generating encryption keys for vault [$vaultName]"
                 if ($PSCmdlet.ShouldProcess("shard file $fileShardPath", 'Set')) {
                     Set-Content -Path $fileShardPath -Value ([System.Guid]::NewGuid().ToString())
                 }

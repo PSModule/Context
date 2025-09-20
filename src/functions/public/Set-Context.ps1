@@ -42,6 +42,16 @@ function Set-Context {
 
         Sets a context using a hashtable object.
 
+        .EXAMPLE
+        Set-Context -ID 'default' -Context @{ ApiEndpoint = 'https://api.example.com' } -Vault 'MyModule' -Type 'Module'
+
+        Creates or updates the default module context for 'MyModule' vault. This becomes the active module context.
+
+        .EXAMPLE  
+        Set-Context -ID 'staging' -Context @{ ApiEndpoint = 'https://staging.example.com' } -Vault 'MyModule' -Type 'Module'
+
+        Creates a staging module context and sets it as the active module context for 'MyModule' vault.
+
         .OUTPUTS
         [PSCustomObject]
 
@@ -68,6 +78,11 @@ function Set-Context {
         [Parameter(Mandatory)]
         [string] $Vault,
 
+        # The type of context to set: 'User' or 'Module'.
+        [Parameter()]
+        [ValidateSet('User', 'Module')]
+        [string] $Type = 'User',
+
         # Pass the context through the pipeline.
         [Parameter()]
         [switch] $PassThru
@@ -93,18 +108,34 @@ function Set-Context {
             throw 'An ID is required, either as a parameter or as a property of the context object.'
         }
 
-        $contextInfo = Get-ContextInfo -ID $ID -Vault $Vault
+        $contextInfo = Get-ContextInfo -ID $ID -Vault $Vault -Type $Type
         Write-Verbose 'Context info:'
         $contextInfo | Format-List | Out-String -Stream | ForEach-Object { Write-Verbose "[$stackPath]   $_" }
+        
         if (-not $contextInfo) {
-            Write-Verbose "[$stackPath] - Creating context [$ID] in [$Vault]"
+            Write-Verbose "[$stackPath] - Creating context [$ID] in [$Vault] of type [$Type]"
             $guid = [Guid]::NewGuid().Guid
-            $contextPath = Join-Path -Path $vaultObject.Path -ChildPath "$guid.json"
+            $contextDir = Get-ContextDirectory -VaultPath $vaultObject.Path -Type $Type
+            $contextPath = Join-Path -Path $contextDir -ChildPath "$guid.json"
         } else {
             Write-Verbose "[$stackPath] - Context [$ID] found in [$Vault]"
             $contextPath = $contextInfo.Path
         }
         Write-Verbose "[$stackPath] - Context path: [$contextPath]"
+
+        # For Module contexts, handle default context creation and active context logic
+        if ($Type -eq 'Module') {
+            # Ensure 'default' context exists for module type
+            if ($ID -eq 'default' -or -not (Get-ContextInfo -ID 'default' -Vault $Vault -Type 'Module')) {
+                Write-Verbose "[$stackPath] - Ensuring default module context exists"
+            }
+            
+            # Set this as the active context for module type (unless it's just updating the same context)
+            if (-not $contextInfo -or (Get-ActiveModuleContext -VaultPath $vaultObject.Path) -ne $ID) {
+                Write-Verbose "[$stackPath] - Setting [$ID] as active module context"
+                Set-ActiveModuleContext -VaultPath $vaultObject.Path -ContextName $ID
+            }
+        }
 
         $contextJson = ConvertTo-ContextJson -Context $Context -ID $ID
         $keys = Get-ContextVaultKeyPair -Vault $Vault
@@ -123,7 +154,7 @@ function Set-Context {
         }
 
         if ($PassThru) {
-            Get-Context -ID $ID -Vault $Vault
+            Get-Context -ID $ID -Vault $Vault -Type $Type
         }
     }
 
