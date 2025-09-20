@@ -8,12 +8,6 @@ function Get-ContextDirectory {
         For User contexts, returns the 'user' subdirectory.
         For Module contexts, returns the 'module' subdirectory.
 
-        .PARAMETER VaultPath
-        The path to the vault directory.
-
-        .PARAMETER Type
-        The type of context: 'User' or 'Module'.
-
         .EXAMPLE
         Get-ContextDirectory -VaultPath 'C:\Users\John\.contextvaults\MyVault' -Type 'User'
         
@@ -26,9 +20,11 @@ function Get-ContextDirectory {
     #>
     [CmdletBinding()]
     param(
+        # The path to the vault directory.
         [Parameter(Mandatory)]
         [string] $VaultPath,
 
+        # The type of context: 'User' or 'Module'.
         [Parameter(Mandatory)]
         [ValidateSet('User', 'Module')]
         [string] $Type
