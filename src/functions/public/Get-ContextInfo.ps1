@@ -90,9 +90,9 @@
         Write-Verbose "[$stackPath] - Found $($files.Count) context file(s) in vault(s)."
 
         foreach ($file in $files) {
-            # Use robust file reading with explicit sharing to ensure no file locking during reads
+            # Use non-locking file reading to allow concurrent access
             try {
-                $content = [System.IO.File]::ReadAllText($file.FullName, [System.Text.Encoding]::UTF8)
+                $content = Get-ContentNonLocking -Path $file.FullName
                 $contextInfo = $content | ConvertFrom-Json
             } catch [System.IO.IOException] {
                 Write-Warning "[$stackPath] - IO error reading context file '$($file.FullName)': $($_.Exception.Message). Falling back to Get-Content."

@@ -53,10 +53,25 @@ Describe 'Context File Locking' {
                 $jobs += Start-Job -ScriptBlock {
                     param($filePath, $readerId)
                     try {
-                        # Test the enhanced file reading approach used in Get-ContextInfo
+                        # Test the enhanced file reading approach used in Get-ContextInfo (FileStream with explicit sharing)
                         Start-Sleep -Milliseconds (Get-Random -Minimum 10 -Maximum 50)
-                        $content = [System.IO.File]::ReadAllText($filePath, [System.Text.Encoding]::UTF8)
-                        $contextInfo = $content | ConvertFrom-Json
+                        $stream = [System.IO.FileStream]::new(
+                            $filePath,
+                            [System.IO.FileMode]::Open,
+                            [System.IO.FileAccess]::Read,
+                            [System.IO.FileShare]::ReadWrite -bor [System.IO.FileShare]::Delete
+                        )
+                        try {
+                            $reader = [System.IO.StreamReader]::new($stream)
+                            try {
+                                $content = $reader.ReadToEnd()
+                                $contextInfo = $content | ConvertFrom-Json
+                            } finally {
+                                $reader.Close()
+                            }
+                        } finally {
+                            $stream.Close()
+                        }
                         return @{
                             Success = $true
                             ReaderId = $readerId
@@ -92,9 +107,24 @@ Describe 'Context File Locking' {
                 $jobs += Start-Job -ScriptBlock {
                     param($filePath, $readerId)
                     try {
-                        # Test the enhanced file reading approach used in Get-ContextVaultKeyPair
+                        # Test the enhanced file reading approach used in Get-ContextVaultKeyPair (FileStream with explicit sharing)
                         Start-Sleep -Milliseconds (Get-Random -Minimum 10 -Maximum 50)
-                        $fileShard = [System.IO.File]::ReadAllText($filePath, [System.Text.Encoding]::UTF8).Trim()
+                        $stream = [System.IO.FileStream]::new(
+                            $filePath,
+                            [System.IO.FileMode]::Open,
+                            [System.IO.FileAccess]::Read,
+                            [System.IO.FileShare]::ReadWrite -bor [System.IO.FileShare]::Delete
+                        )
+                        try {
+                            $reader = [System.IO.StreamReader]::new($stream)
+                            try {
+                                $fileShard = $reader.ReadToEnd().Trim()
+                            } finally {
+                                $reader.Close()
+                            }
+                        } finally {
+                            $stream.Close()
+                        }
                         return @{
                             Success = $true
                             ReaderId = $readerId
@@ -126,14 +156,30 @@ Describe 'Context File Locking' {
             $results.Count | Should -Be 5
         }
         
-        It 'Should handle fallback from ReadAllText to Get-Content gracefully' {
+        It 'Should handle fallback from FileStream to Get-Content gracefully' {
             # Test that both methods produce equivalent results
-            $content1 = [System.IO.File]::ReadAllText($script:TestContextFile, [System.Text.Encoding]::UTF8)
-            $content2 = Get-Content -Path $script:TestContextFile -Raw
+            $stream = [System.IO.FileStream]::new(
+                $script:TestContextFile,
+                [System.IO.FileMode]::Open,
+                [System.IO.FileAccess]::Read,
+                [System.IO.FileShare]::ReadWrite -bor [System.IO.FileShare]::Delete
+            )
+            try {
+                $reader = [System.IO.StreamReader]::new($stream)
+                try {
+                    $content1 = $reader.ReadToEnd()
+                } finally {
+                    $reader.Close()
+                }
+            } finally {
+                $stream.Close()
+            }
             
+            $content2 = Get-Content -Path $script:TestContextFile -Raw
+
             $json1 = $content1 | ConvertFrom-Json
             $json2 = $content2 | ConvertFrom-Json
-            
+
             $json1.ID | Should -Be $json2.ID
             $json1.Vault | Should -Be $json2.Vault
             $json1.Context | Should -Be $json2.Context
@@ -171,7 +217,22 @@ Describe 'Context File Locking' {
             
             # File should be readable after write completes
             if (Test-Path $testFile) {
-                $finalContent = [System.IO.File]::ReadAllText($testFile, [System.Text.Encoding]::UTF8)
+                $stream = [System.IO.FileStream]::new(
+                    $testFile,
+                    [System.IO.FileMode]::Open,
+                    [System.IO.FileAccess]::Read,
+                    [System.IO.FileShare]::ReadWrite -bor [System.IO.FileShare]::Delete
+                )
+                try {
+                    $reader = [System.IO.StreamReader]::new($stream)
+                    try {
+                        $finalContent = $reader.ReadToEnd()
+                    } finally {
+                        $reader.Close()
+                    }
+                } finally {
+                    $stream.Close()
+                }
                 $finalJson = $finalContent | ConvertFrom-Json
                 $finalJson.ID | Should -Be "WriteTestContext"
             }
@@ -188,10 +249,25 @@ Describe 'Context File Locking' {
                 $jobs += Start-Job -ScriptBlock {
                     param($filePath, $readerId)
                     try {
-                        # Perform multiple reads to stress test
+                        # Perform multiple reads to stress test using FileStream approach
                         for ($j = 1; $j -le 2; $j++) {
-                            $content = [System.IO.File]::ReadAllText($filePath, [System.Text.Encoding]::UTF8)
-                            $contextInfo = $content | ConvertFrom-Json
+                            $stream = [System.IO.FileStream]::new(
+                                $filePath,
+                                [System.IO.FileMode]::Open,
+                                [System.IO.FileAccess]::Read,
+                                [System.IO.FileShare]::ReadWrite -bor [System.IO.FileShare]::Delete
+                            )
+                            try {
+                                $reader = [System.IO.StreamReader]::new($stream)
+                                try {
+                                    $content = $reader.ReadToEnd()
+                                    $contextInfo = $content | ConvertFrom-Json
+                                } finally {
+                                    $reader.Close()
+                                }
+                            } finally {
+                                $stream.Close()
+                            }
                             Start-Sleep -Milliseconds 5
                         }
                         return @{ Success = $true; ReaderId = $readerId }

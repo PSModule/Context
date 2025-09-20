@@ -35,9 +35,9 @@
         $vaultObject = Set-ContextVault -Name $Vault -PassThru
         $shardPath = Join-Path -Path $vaultObject.Path -ChildPath $script:Config.ShardFileName
         
-        # Use robust file reading with explicit sharing to ensure no file locking during reads
+        # Use non-locking file reading to allow concurrent access
         try {
-            $fileShard = [System.IO.File]::ReadAllText($shardPath, [System.Text.Encoding]::UTF8).Trim()
+            $fileShard = (Get-ContentNonLocking -Path $shardPath).Trim()
         } catch [System.IO.IOException] {
             Write-Warning "[$stackPath] - IO error reading shard file '$shardPath': $($_.Exception.Message). Falling back to Get-Content."
             $fileShard = Get-Content -Path $shardPath -Raw
