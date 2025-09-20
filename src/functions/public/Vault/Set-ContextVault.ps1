@@ -42,14 +42,36 @@ function Set-ContextVault {
 
             $vaultPath = Join-Path -Path $script:Config.RootPath -ChildPath $vaultName
             if (-not (Test-Path $vaultPath)) {
-                Write-Verbose "Creating new vault [$($vault.Name)]"
+                Write-Verbose "Creating new vault [$vaultName]"
                 if ($PSCmdlet.ShouldProcess("context vault folder $vaultName", 'Set')) {
                     $null = New-Item -Path $vaultPath -ItemType Directory -Force
+                    
+                    # Create module and user subdirectories for new vault structure
+                    $moduleDir = Join-Path -Path $vaultPath -ChildPath 'module'
+                    $userDir = Join-Path -Path $vaultPath -ChildPath 'user'
+                    $null = New-Item -Path $moduleDir -ItemType Directory -Force
+                    $null = New-Item -Path $userDir -ItemType Directory -Force
+                    
+                    Write-Verbose "Created vault directories: module/ and user/"
+                }
+            } else {
+                # Ensure module and user subdirectories exist for existing vaults
+                $moduleDir = Join-Path -Path $vaultPath -ChildPath 'module'
+                $userDir = Join-Path -Path $vaultPath -ChildPath 'user'
+                
+                if (-not (Test-Path $moduleDir)) {
+                    $null = New-Item -Path $moduleDir -ItemType Directory -Force
+                    Write-Verbose "Created module directory for existing vault"
+                }
+                if (-not (Test-Path $userDir)) {
+                    $null = New-Item -Path $userDir -ItemType Directory -Force
+                    Write-Verbose "Created user directory for existing vault"
                 }
             }
+            
             $fileShardPath = Join-Path -Path $vaultPath -ChildPath $script:Config.ShardFileName
             if (-not (Test-Path $fileShardPath)) {
-                Write-Verbose "Generating encryption keys for vault [$($vault.Name)]"
+                Write-Verbose "Generating encryption keys for vault [$vaultName]"
                 if ($PSCmdlet.ShouldProcess("shard file $fileShardPath", 'Set')) {
                     Set-Content -Path $fileShardPath -Value ([System.Guid]::NewGuid().ToString())
                 }

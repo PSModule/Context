@@ -393,4 +393,107 @@ Describe 'Context' {
             $results.ID | Should -Not -Contain 'TestID3'
         }
     }
+
+    Context 'Context Type Parameter Integration' {
+        BeforeAll {
+            Get-ContextVault | Remove-ContextVault -Confirm:$false
+            
+            # Create contexts of both types
+            Set-Context -ID 'UserCtx1' -Context @{ UserData = 'test1' } -Vault 'TypeTestVault' -Type 'User'
+            Set-Context -ID 'UserCtx2' -Context @{ UserData = 'test2' } -Vault 'TypeTestVault' -Type 'User'
+            Set-Context -ID 'ModuleCtx1' -Context @{ ModuleConfig = 'config1' } -Vault 'TypeTestVault' -Type 'Module'
+            Set-Context -ID 'ModuleCtx2' -Context @{ ModuleConfig = 'config2' } -Vault 'TypeTestVault' -Type 'Module'
+        }
+
+        AfterAll {
+            Get-ContextVault | Remove-ContextVault -Confirm:$false
+        }
+
+        It "Set-Context should create contexts in appropriate subdirectories" {
+            $vault = Get-ContextVault -Name 'TypeTestVault'
+            
+            # Check user contexts
+            $userContexts = Get-ContextInfo -Vault 'TypeTestVault' -Type 'User'
+            $userContexts | Should -HaveCount 2
+            $userContexts.ID | Should -Contain 'UserCtx1'
+            $userContexts.ID | Should -Contain 'UserCtx2'
+            
+            # Check module contexts
+            $moduleContexts = Get-ContextInfo -Vault 'TypeTestVault' -Type 'Module'
+            $moduleContexts | Should -HaveCount 2
+            $moduleContexts.ID | Should -Contain 'ModuleCtx1'
+            $moduleContexts.ID | Should -Contain 'ModuleCtx2'
+        }
+
+        It "Get-Context should respect Type parameter" {
+            # Test User type (default)
+            $userCtx = Get-Context -ID 'UserCtx1' -Vault 'TypeTestVault'
+            $userCtx | Should -Not -BeNullOrEmpty
+            $userCtx.ID | Should -Be 'UserCtx1'
+            $userCtx.UserData | Should -Be 'test1'
+
+            # Test explicit User type
+            $userCtx2 = Get-Context -ID 'UserCtx2' -Vault 'TypeTestVault' -Type 'User'
+            $userCtx2 | Should -Not -BeNullOrEmpty
+            $userCtx2.ID | Should -Be 'UserCtx2'
+            $userCtx2.UserData | Should -Be 'test2'
+
+            # Test Module type
+            $moduleCtx = Get-Context -ID 'ModuleCtx1' -Vault 'TypeTestVault' -Type 'Module'
+            $moduleCtx | Should -Not -BeNullOrEmpty
+            $moduleCtx.ID | Should -Be 'ModuleCtx1'
+            $moduleCtx.ModuleConfig | Should -Be 'config1'
+        }
+
+        It "Get-Context should not find contexts of wrong type" {
+            # Should not find module context when searching user contexts
+            $result = Get-Context -ID 'ModuleCtx1' -Vault 'TypeTestVault' -Type 'User'
+            $result | Should -BeNullOrEmpty
+
+            # Should not find user context when searching module contexts
+            $result = Get-Context -ID 'UserCtx1' -Vault 'TypeTestVault' -Type 'Module'
+            $result | Should -BeNullOrEmpty
+        }
+
+        It "Remove-Context should respect Type parameter" {
+            # Create test contexts
+            Set-Context -ID 'RemoveTest' -Context @{ Data = 'user' } -Vault 'TypeTestVault' -Type 'User'
+            Set-Context -ID 'RemoveTest' -Context @{ Data = 'module' } -Vault 'TypeTestVault' -Type 'Module'
+
+            # Remove user context
+            { Remove-Context -ID 'RemoveTest' -Vault 'TypeTestVault' -Type 'User' } | Should -Not -Throw
+
+            # Module context should still exist
+            $moduleCtx = Get-Context -ID 'RemoveTest' -Vault 'TypeTestVault' -Type 'Module'
+            $moduleCtx | Should -Not -BeNullOrEmpty
+            $moduleCtx.Data | Should -Be 'module'
+
+            # User context should be gone
+            $userCtx = Get-Context -ID 'RemoveTest' -Vault 'TypeTestVault' -Type 'User'
+            $userCtx | Should -BeNullOrEmpty
+        }
+
+        It "Rename-Context should respect Type parameter" {
+            # Create test contexts
+            Set-Context -ID 'RenameTest' -Context @{ Data = 'user' } -Vault 'TypeTestVault' -Type 'User'
+            Set-Context -ID 'RenameTest' -Context @{ Data = 'module' } -Vault 'TypeTestVault' -Type 'Module'
+
+            # Rename user context
+            { Rename-Context -ID 'RenameTest' -NewID 'RenamedUser' -Vault 'TypeTestVault' -Type 'User' } | Should -Not -Throw
+
+            # Module context should still exist with original name
+            $moduleCtx = Get-Context -ID 'RenameTest' -Vault 'TypeTestVault' -Type 'Module'
+            $moduleCtx | Should -Not -BeNullOrEmpty
+            $moduleCtx.Data | Should -Be 'module'
+
+            # User context should exist with new name
+            $userCtx = Get-Context -ID 'RenamedUser' -Vault 'TypeTestVault' -Type 'User'
+            $userCtx | Should -Not -BeNullOrEmpty
+            $userCtx.Data | Should -Be 'user'
+
+            # Old user context should be gone
+            $oldUserCtx = Get-Context -ID 'RenameTest' -Vault 'TypeTestVault' -Type 'User'
+            $oldUserCtx | Should -BeNullOrEmpty
+        }
+    }
 }

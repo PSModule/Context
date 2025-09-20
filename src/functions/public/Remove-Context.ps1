@@ -87,7 +87,12 @@
 
         # The name of the vault to remove contexts from.
         [Parameter()]
-        [string] $Vault
+        [string] $Vault,
+
+        # The type of context to remove: 'User' or 'Module'.
+        [Parameter()]
+        [ValidateSet('User', 'Module')]
+        [string] $Type = 'User'
     )
 
     begin {
@@ -96,14 +101,34 @@
     }
 
     process {
-        $contextInfo = Get-ContextInfo -ID $ID -Vault $Vault
+        $contextInfo = Get-ContextInfo -ID $ID -Vault $Vault -Type $Type
         foreach ($contextInfo in $contextInfo) {
             $contextId = $contextInfo.ID
 
             if ($PSCmdlet.ShouldProcess("Context '$contextId'", 'Remove')) {
-                Write-Verbose "[$stackPath] - Removing context [$contextId]"
+                Write-Verbose "[$stackPath] - Removing context [$contextId] of type [$Type]"
+                
+                # Special handling for module contexts - don't allow removing 'default' if it's the only one
+                if ($Type -eq 'Module' -and $contextId -eq 'default') {
+                    $allModuleContexts = Get-ContextInfo -ID '*' -Vault $Vault -Type 'Module'
+                    if ($allModuleContexts.Count -le 1) {
+                        Write-Warning "Cannot remove the default module context when it's the only module context."
+                        continue
+                    }
+                }
+                
                 $contextInfo.Path | Remove-Item -Force -ErrorAction Stop
                 Write-Verbose "[$stackPath] - Removed item: $contextId"
+                
+                # If we removed the active module context, reset to 'default'
+                if ($Type -eq 'Module') {
+                    $vaultObject = Get-ContextVault -Name $Vault
+                    $activeContext = Get-ActiveModuleContext -VaultPath $vaultObject.Path
+                    if ($activeContext -eq $contextId -and $contextId -ne 'default') {
+                        Write-Verbose "[$stackPath] - Resetting active module context to 'default'"
+                        Set-ActiveModuleContext -VaultPath $vaultObject.Path -ContextName 'default'
+                    }
+                }
             }
         }
     }
