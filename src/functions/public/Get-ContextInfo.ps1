@@ -98,8 +98,10 @@
                 Write-Warning "[$stackPath] - Error reading context file '$($file.FullName)': $($_.Exception.Message)"
                 continue
             }
-            Write-Verbose "[$stackPath] - Processing file: $($file.FullName)"
-            $contextInfo | Format-List | Out-String -Stream | ForEach-Object { Write-Verbose "[$stackPath] $_" }
+            if ($VerbosePreference -eq 'Continue') {
+                Write-Verbose "[$stackPath] - Processing file: $($file.FullName)"
+                $contextInfo | Format-List | Out-String -Stream | ForEach-Object { Write-Verbose "[$stackPath] $_" }
+            }
             foreach ($IDItem in $ID) {
                 if ($contextInfo.ID -like $IDItem) {
                     [ContextInfo]::new($contextInfo)

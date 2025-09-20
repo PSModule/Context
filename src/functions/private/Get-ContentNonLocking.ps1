@@ -9,12 +9,6 @@ function Get-ContentNonLocking {
         file locking conflicts in multi-process scenarios. Includes automatic fallback
         to Get-Content if FileStream access fails.
 
-        .PARAMETER Path
-        The path to the file to read.
-
-        .PARAMETER Encoding
-        The text encoding to use when reading the file. Defaults to UTF8.
-
         .EXAMPLE
         Get-ContentNonLocking -Path 'C:\data\file.txt'
 
@@ -26,7 +20,7 @@ function Get-ContentNonLocking {
         Reads a JSON file without locking it and converts it to an object.
 
         .OUTPUTS
-        [string] The content of the file.
+        string
 
         .NOTES
         This function uses System.IO.FileStream with FileShare.ReadWrite and FileShare.Delete
@@ -35,9 +29,11 @@ function Get-ContentNonLocking {
     #>
     [CmdletBinding()]
     param(
+        # The path to the file to read.
         [Parameter(Mandatory)]
         [string] $Path,
 
+        # The text encoding to use when reading the file. Defaults to UTF8.
         [Parameter()]
         [System.Text.Encoding] $Encoding = [System.Text.Encoding]::UTF8
     )
@@ -63,7 +59,6 @@ function Get-ContentNonLocking {
                 $reader = [System.IO.StreamReader]::new($stream, $Encoding)
                 try {
                     $content = $reader.ReadToEnd()
-                    Write-Debug "[$stackPath] - Successfully read $($content.Length) characters from file using FileStream"
                     return $content
                 } finally {
                     $reader.Close()
@@ -75,7 +70,6 @@ function Get-ContentNonLocking {
             Write-Warning "[$stackPath] - IO error reading file '$Path': $($_.Exception.Message). Falling back to Get-Content."
             try {
                 $content = Get-Content -Path $Path -Raw -Encoding $Encoding
-                Write-Debug "[$stackPath] - Successfully read $($content.Length) characters from file using Get-Content fallback"
                 return $content
             } catch {
                 Write-Debug "[$stackPath] - Fallback also failed: $($_.Exception.Message)"
