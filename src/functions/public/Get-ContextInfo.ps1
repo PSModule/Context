@@ -95,14 +95,15 @@
                 $content = Get-ContentNonLocking -Path $file.FullName
                 $contextInfo = $content | ConvertFrom-Json
             } catch [System.IO.IOException] {
-                Write-Warning "[$stackPath] - IO error reading context file '$($file.FullName)': $($_.Exception.Message). Falling back to Get-Content."
+                Write-Warning "[$stackPath] - IO error reading context file '$($file.FullName)':"
+                Write-Warning "$($_.Exception.Message). Falling back to Get-Content."
                 $contextInfo = Get-Content -Path $file.FullName -Raw | ConvertFrom-Json
             } catch {
                 Write-Warning "[$stackPath] - Error reading context file '$($file.FullName)': $($_.Exception.Message)"
                 continue
             }
             Write-Verbose "[$stackPath] - Processing file: $($file.FullName)"
-            $contextInfo | Format-List | Out-String -Stream | ForEach-Object { Write-Verbose "[$stackPath]   $_" }
+            $contextInfo | Format-List | Out-String -Stream | ForEach-Object { Write-Verbose "[$stackPath] $_" }
             foreach ($IDItem in $ID) {
                 if ($contextInfo.ID -like $IDItem) {
                     [ContextInfo]::new($contextInfo)
