@@ -55,29 +55,17 @@ function Set-ContextVault {
                     Write-Verbose "Created vault directories: module/ and user/"
                 }
             } else {
-                # Check if this is a legacy vault and migrate it
+                # Ensure module and user subdirectories exist for existing vaults
                 $moduleDir = Join-Path -Path $vaultPath -ChildPath 'module'
                 $userDir = Join-Path -Path $vaultPath -ChildPath 'user'
                 
-                if (-not (Test-Path $moduleDir) -or -not (Test-Path $userDir)) {
-                    Write-Verbose "Migrating legacy vault [$vaultName] to new structure"
-                    if ($PSCmdlet.ShouldProcess("vault $vaultName", 'Migrate to new directory structure')) {
-                        # Create new directories if they don't exist
-                        if (-not (Test-Path $moduleDir)) {
-                            $null = New-Item -Path $moduleDir -ItemType Directory -Force
-                        }
-                        if (-not (Test-Path $userDir)) {
-                            $null = New-Item -Path $userDir -ItemType Directory -Force
-                        }
-                        
-                        # Move existing context files to user directory
-                        $contextFiles = Get-ChildItem -Path $vaultPath -Filter '*.json' -File
-                        foreach ($file in $contextFiles) {
-                            $newPath = Join-Path -Path $userDir -ChildPath $file.Name
-                            Move-Item -Path $file.FullName -Destination $newPath
-                            Write-Verbose "Migrated context file: $($file.Name) -> user/$($file.Name)"
-                        }
-                    }
+                if (-not (Test-Path $moduleDir)) {
+                    $null = New-Item -Path $moduleDir -ItemType Directory -Force
+                    Write-Verbose "Created module directory for existing vault"
+                }
+                if (-not (Test-Path $userDir)) {
+                    $null = New-Item -Path $userDir -ItemType Directory -Force
+                    Write-Verbose "Created user directory for existing vault"
                 }
             }
             

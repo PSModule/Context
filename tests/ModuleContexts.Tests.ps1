@@ -45,36 +45,6 @@ Describe 'Module Contexts and User Contexts' {
             Test-Path $moduleDir | Should -Be $true
             Test-Path $userDir | Should -Be $true
         }
-
-        It 'Should migrate legacy vaults to new directory structure' {
-            # Create a legacy vault structure manually
-            $legacyVaultPath = Join-Path $script:Config.RootPath 'LegacyTest'
-            New-Item -Path $legacyVaultPath -ItemType Directory -Force
-            
-            # Create a fake context file in the root
-            $fakeContextPath = Join-Path $legacyVaultPath 'legacy-context.json'
-            '{"ID":"legacy","Path":"' + $fakeContextPath + '","Vault":"LegacyTest","Context":"fake"}' | Set-Content -Path $fakeContextPath
-            
-            # Create shard file
-            $shardPath = Join-Path $legacyVaultPath 'shard'
-            'test-shard' | Set-Content -Path $shardPath
-            
-            # Call Set-ContextVault to trigger migration
-            $vault = Set-ContextVault -Name 'LegacyTest' -PassThru
-            
-            # Check if directories were created
-            $moduleDir = Join-Path $vault.Path 'module'
-            $userDir = Join-Path $vault.Path 'user'
-            Test-Path $moduleDir | Should -Be $true
-            Test-Path $userDir | Should -Be $true
-            
-            # Check if the file was moved to user directory
-            $migratedContextPath = Join-Path $userDir 'legacy-context.json'
-            Test-Path $migratedContextPath | Should -Be $true
-            
-            # Check if original file was removed from root
-            Test-Path $fakeContextPath | Should -Be $false
-        }
     }
 
     Context 'Get-ContextDirectory Function' {
