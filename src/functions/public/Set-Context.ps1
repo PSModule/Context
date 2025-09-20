@@ -126,8 +126,10 @@ function Set-Context {
         # For Module contexts, handle default context creation and active context logic
         if ($Type -eq 'Module') {
             # Ensure 'default' context exists for module type
-            if ($ID -eq 'default' -or -not (Get-ContextInfo -ID 'default' -Vault $Vault -Type 'Module')) {
-                Write-Verbose "[$stackPath] - Ensuring default module context exists"
+            if ($ID -eq 'default') {
+                Write-Verbose "[$stackPath] - Creating or updating the default module context [$ID] in [$Vault]"
+            } elseif (-not (Get-ContextInfo -ID 'default' -Vault $Vault -Type 'Module')) {
+                Write-Verbose "[$stackPath] - Default module context does not exist; creating default context in [$Vault]"
             }
             
             # Set this as the active context for module type (unless it's just updating the same context)
