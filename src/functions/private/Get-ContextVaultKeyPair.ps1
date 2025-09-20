@@ -34,7 +34,7 @@
     process {
         $vaultObject = Set-ContextVault -Name $Vault -PassThru
         $shardPath = Join-Path -Path $vaultObject.Path -ChildPath $script:Config.ShardFileName
-        
+
         # Use non-locking file reading to allow concurrent access
         try {
             $fileShard = (Get-ContentNonLocking -Path $shardPath).Trim()
@@ -44,7 +44,7 @@
         } catch {
             throw "[$stackPath] - Unable to read shard file '$shardPath': $($_.Exception.Message)"
         }
-        
+
         $machineShard = [System.Environment]::MachineName
         $userShard = [System.Environment]::UserName
         #$userInputShard = Read-Host -Prompt 'Enter a seed shard' # Eventually 4 shards. +1 for user input.

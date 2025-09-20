@@ -8,12 +8,6 @@ function Get-ContentNonLocking {
         other processes to read, write, or delete the file concurrently. This prevents
         file locking conflicts in multi-process scenarios.
 
-        .PARAMETER Path
-        The path to the file to read.
-
-        .PARAMETER Encoding
-        The text encoding to use when reading the file. Defaults to UTF8.
-
         .EXAMPLE
         Get-ContentNonLocking -Path 'C:\data\file.txt'
 
@@ -25,7 +19,7 @@ function Get-ContentNonLocking {
         Reads a JSON file without locking it and converts it to an object.
 
         .OUTPUTS
-        [string] The content of the file.
+        string
 
         .NOTES
         This function uses System.IO.FileStream with FileShare.ReadWrite and FileShare.Delete
@@ -33,9 +27,11 @@ function Get-ContentNonLocking {
     #>
     [CmdletBinding()]
     param(
+        # The path to the file to read.
         [Parameter(Mandatory)]
         [string] $Path,
 
+        # The text encoding to use when reading the file.
         [Parameter()]
         [System.Text.Encoding] $Encoding = [System.Text.Encoding]::UTF8
     )
@@ -48,7 +44,7 @@ function Get-ContentNonLocking {
     process {
         try {
             Write-Verbose "[$stackPath] - Reading file without locking: $Path"
-            
+
             # Open the file in read mode but allow others to read/write/delete at the same time
             $stream = [System.IO.FileStream]::new(
                 $Path,
