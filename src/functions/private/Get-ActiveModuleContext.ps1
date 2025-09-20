@@ -25,7 +25,7 @@ function Get-ActiveModuleContext {
     
     if (Test-Path $activeContextFile) {
         try {
-            $contextName = (Get-Content -Path $activeContextFile -Raw).Trim()
+            $contextName = (Get-ContentNonLocking -Path $activeContextFile).Trim()
             if ([string]::IsNullOrWhiteSpace($contextName)) {
                 return 'default'
             }
