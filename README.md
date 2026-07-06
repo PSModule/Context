@@ -7,7 +7,7 @@ Context is a PowerShell module for managing contexts with secrets and variables.
 Install the module from the PowerShell Gallery:
 
 ```powershell
-Install-PSResource -Name Context
+Install-PSResource -Name Context -Repository PSGallery
 Import-Module -Name Context
 ```
 
@@ -19,7 +19,7 @@ Use PowerShell help and command discovery for module details:
 
 ```powershell
 Get-Command -Module Context
-Get-Help <CommandName> -Examples
+Get-Help Get-Context -Examples
 ```
 
 ## Contributing
