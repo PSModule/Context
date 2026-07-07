@@ -61,6 +61,11 @@
         [Parameter()]
         [string] $Vault,
 
+        # The type of context to rename: 'User' or 'Module'.
+        [Parameter()]
+        [ValidateSet('User', 'Module')]
+        [string] $Type = 'User',
+
         # Pass the context through the pipeline.
         [Parameter()]
         [switch] $PassThru
@@ -72,19 +77,31 @@
     }
 
     process {
-        $context = Get-Context -ID $ID -Vault $Vault
+        $context = Get-Context -ID $ID -Vault $Vault -Type $Type
         if (-not $context) {
-            throw "Context with ID '$ID' not found in vault '$Vault'"
+            throw "Context with ID '$ID' not found in vault '$Vault' for type '$Type'"
         }
 
-        $existingContext = Get-Context -ID $NewID -Vault $Vault
+        $existingContext = Get-Context -ID $NewID -Vault $Vault -Type $Type
         if ($existingContext -and -not $Force) {
-            throw "Context with ID '$NewID' already exists in vault '$Vault'"
+            throw "Context with ID '$NewID' already exists in vault '$Vault' for type '$Type'"
         }
 
-        if ($PSCmdlet.ShouldProcess("Renaming context '$ID' to '$NewID' in vault '$Vault'")) {
-            $context | Set-Context -ID $NewID -Vault $Vault -PassThru:$PassThru
-            Remove-Context -ID $ID -Vault $Vault
+        if ($PSCmdlet.ShouldProcess("Renaming context '$ID' to '$NewID' in vault '$Vault' for type '$Type'")) {
+            # Special handling for module contexts and active context tracking
+            if ($Type -eq 'Module') {
+                $vaultObject = Get-ContextVault -Name $Vault
+                $activeContext = Get-ActiveModuleContext -VaultPath $vaultObject.Path
+                
+                # If we're renaming the active context, update the active context reference
+                if ($activeContext -eq $ID) {
+                    Write-Verbose "[$stackPath] - Updating active module context from '$ID' to '$NewID'"
+                    Set-ActiveModuleContext -VaultPath $vaultObject.Path -ContextName $NewID
+                }
+            }
+            
+            $context | Set-Context -ID $NewID -Vault $Vault -Type $Type -PassThru:$PassThru
+            Remove-Context -ID $ID -Vault $Vault -Type $Type
         }
     }
 

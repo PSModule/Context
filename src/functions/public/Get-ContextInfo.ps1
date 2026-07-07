@@ -70,7 +70,12 @@
 
         # The name of the vault to retrieve context info from. Supports wildcards.
         [Parameter()]
-        [string[]] $Vault = '*'
+        [string[]] $Vault = '*',
+
+        # The type of context to retrieve: 'User' or 'Module'.
+        [Parameter()]
+        [ValidateSet('User', 'Module')]
+        [string] $Type = 'User'
     )
 
     begin {
@@ -85,9 +90,12 @@
         Write-Verbose "[$stackPath] - Found $($vaults.Count) vault(s) matching '$($Vault -join ', ')'."
 
         $files = foreach ($vaultObject in $vaults) {
-            Get-ChildItem -Path $vaultObject.Path -Filter *.json -File
+            $contextDir = Get-ContextDirectory -VaultPath $vaultObject.Path -Type $Type
+            if (Test-Path $contextDir) {
+                Get-ChildItem -Path $contextDir -Filter *.json -File
+            }
         }
-        Write-Verbose "[$stackPath] - Found $($files.Count) context file(s) in vault(s)."
+        Write-Verbose "[$stackPath] - Found $($files.Count) context file(s) in vault(s) for type '$Type'."
 
         foreach ($file in $files) {
             # Use non-locking file reading to allow concurrent access

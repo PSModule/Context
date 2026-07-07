@@ -77,12 +77,26 @@ function Get-Context {
 
         Retrieves all contexts that start with 'My' from the context vault (directly from disk).
 
+        .EXAMPLE
+        Get-Context -Vault 'MyModule' -ID 'default' -Type 'Module'
+
+        Retrieves the default module context from the 'MyModule' vault.
+
+        .EXAMPLE
+        Get-Context -Vault 'MyModule' -Type 'Module'
+
+        Retrieves all module contexts from the 'MyModule' vault.
+
         .OUTPUTS
         [System.Object]
 
         .NOTES
         Returns a list of contexts matching the specified ID or all contexts if no ID is specified.
         Each context object contains its ID and corresponding stored properties.
+        
+        The -Type parameter determines whether to retrieve User contexts (default) or Module contexts.
+        Module contexts are stored in the 'module' subdirectory, while User contexts are stored 
+        in the 'user' subdirectory of each vault.
 
         .LINK
         https://psmodule.io/Context/Functions/Get-Context/
@@ -101,7 +115,12 @@ function Get-Context {
         # The name of the vault to store the context in.
         [Parameter()]
         [SupportsWildcards()]
-        [string[]] $Vault = '*'
+        [string[]] $Vault = '*',
+
+        # The type of context to retrieve: 'User' or 'Module'.
+        [Parameter()]
+        [ValidateSet('User', 'Module')]
+        [string] $Type = 'User'
     )
 
     begin {
@@ -110,9 +129,25 @@ function Get-Context {
     }
 
     process {
-        $contextInfos = Get-ContextInfo -ID $ID -Vault $Vault -ErrorAction Stop
+        # Special handling for Module contexts: if no specific ID is given, get the active context
+        if ($Type -eq 'Module' -and $ID.Count -eq 1 -and $ID[0] -eq '*') {
+            foreach ($vaultName in $Vault) {
+                $vaultObject = Get-ContextVault -Name $vaultName -ErrorAction SilentlyContinue
+                if ($vaultObject) {
+                    $activeContextName = Get-ActiveModuleContext -VaultPath $vaultObject.Path
+                    Write-Verbose "[$stackPath] - Getting active module context '$activeContextName' for vault '$vaultName'"
+                    $activeContext = Get-Context -ID $activeContextName -Vault $vaultName -Type 'Module'
+                    if ($activeContext) {
+                        $activeContext
+                    }
+                }
+            }
+            return
+        }
+
+        $contextInfos = Get-ContextInfo -ID $ID -Vault $Vault -Type $Type -ErrorAction Stop
         foreach ($contextInfo in $contextInfos) {
-            Write-Verbose "Retrieving context - ID: [$($contextInfo.ID)], Vault: [$($contextInfo.Vault)]"
+            Write-Verbose "Retrieving context - ID: [$($contextInfo.ID)], Vault: [$($contextInfo.Vault)], Type: [$Type]"
             try {
                 if (-not (Test-Path -Path $contextInfo.Path)) {
                     Write-Warning "Context file does not exist: $($contextInfo.Path)"
