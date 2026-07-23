@@ -1,5 +1,3 @@
-﻿#Requires -Modules @{ ModuleName = 'Sodium'; RequiredVersion = '2.2.2' }
-
 function Get-Context {
     <#
         .SYNOPSIS
@@ -107,6 +105,8 @@ function Get-Context {
     begin {
         $stackPath = Get-PSCallStackPath
         Write-Debug "[$stackPath] - Begin"
+        $vaultKeyCache = @{}
+        Assert-ContextSodiumModule
     }
 
     process {
@@ -118,7 +118,10 @@ function Get-Context {
                     Write-Warning "Context file does not exist: $($contextInfo.Path)"
                     continue
                 }
-                $keys = Get-ContextVaultKeyPair -Vault $contextInfo.Vault
+                if (-not $vaultKeyCache.ContainsKey($contextInfo.Vault)) {
+                    $vaultKeyCache[$contextInfo.Vault] = Get-ContextVaultKeyPair -Vault $contextInfo.Vault
+                }
+                $keys = $vaultKeyCache[$contextInfo.Vault]
                 $params = @{
                     SealedBox  = $contextInfo.Context
                     PublicKey  = $keys.PublicKey

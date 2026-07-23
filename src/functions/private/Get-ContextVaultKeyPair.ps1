@@ -29,6 +29,10 @@
     begin {
         $stackPath = Get-PSCallStackPath
         Write-Debug "[$stackPath] - Start"
+        Assert-ContextSodiumModule
+        if ($null -eq $script:ContextVaultKeyPairCache) {
+            $script:ContextVaultKeyPairCache = @{}
+        }
     }
 
     process {
@@ -42,12 +46,23 @@
             throw "[$stackPath] - Unable to read shard file '$shardPath': $($_.Exception.Message)"
         }
 
+        if ($script:ContextVaultKeyPairCache.ContainsKey($vaultObject.Name)) {
+            $cachedEntry = $script:ContextVaultKeyPairCache[$vaultObject.Name]
+            if ($cachedEntry.Shard -eq $fileShard) {
+                return $cachedEntry.Keys
+            }
+        }
+
         $machineShard = [System.Environment]::MachineName
         $userShard = [System.Environment]::UserName
         #$userInputShard = Read-Host -Prompt 'Enter a seed shard' # Eventually 4 shards. +1 for user input.
         $seed = $machineShard + $userShard + $fileShard # + $userInputShard
         $keys = New-SodiumKeyPair -Seed $seed
-        $keys
+        $script:ContextVaultKeyPairCache[$vaultObject.Name] = [pscustomobject]@{
+            Shard = $fileShard
+            Keys  = $keys
+        }
+        return $keys
     }
 
     end {

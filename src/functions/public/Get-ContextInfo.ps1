@@ -79,32 +79,93 @@
     }
 
     process {
+        $idPatterns = [System.Collections.Generic.List[System.Management.Automation.WildcardPattern]]::new()
+        $exactIds = [System.Collections.Generic.List[string]]::new()
+        $hasWildcardId = $false
+
+        foreach ($idItem in $ID) {
+            if ([string]::IsNullOrWhiteSpace($idItem)) {
+                continue
+            }
+
+            $wildcardPattern = [System.Management.Automation.WildcardPattern]::new($idItem, [System.Management.Automation.WildcardOptions]::IgnoreCase)
+            $null = $idPatterns.Add($wildcardPattern)
+
+            if ([System.Management.Automation.WildcardPattern]::ContainsWildcardCharacters($idItem)) {
+                $hasWildcardId = $true
+                continue
+            }
+
+            if (-not $exactIds.Contains($idItem)) {
+                $null = $exactIds.Add($idItem)
+            }
+        }
+
+        if ($idPatterns.Count -eq 0) {
+            return
+        }
+
         $vaults = foreach ($vaultName in $Vault) {
             Get-ContextVault -Name $vaultName -ErrorAction Stop
         }
         Write-Verbose "[$stackPath] - Found $($vaults.Count) vault(s) matching '$($Vault -join ', ')'."
 
-        $files = foreach ($vaultObject in $vaults) {
-            Get-ChildItem -Path $vaultObject.Path -Filter *.json -File
-        }
-        Write-Verbose "[$stackPath] - Found $($files.Count) context file(s) in vault(s)."
+        foreach ($vaultObject in $vaults) {
+            $contextIndex = Get-ContextFileIndex -Vault $vaultObject.Name -VaultPath $vaultObject.Path
 
-        foreach ($file in $files) {
-            # Use non-locking file reading to allow concurrent access
-            try {
-                $content = Get-ContentNonLocking -Path $file.FullName
-                $contextInfo = $content | ConvertFrom-Json
-            } catch {
-                Write-Warning "[$stackPath] - Error reading context file '$($file.FullName)': $($_.Exception.Message)"
+            if (-not $hasWildcardId -and $exactIds.Count -gt 0) {
+                foreach ($exactId in $exactIds) {
+                    $contextPath = $null
+                    if (-not $contextIndex.TryGetValue($exactId, [ref]$contextPath)) {
+                        continue
+                    }
+
+                    if (-not (Test-Path -LiteralPath $contextPath -PathType Leaf)) {
+                        Remove-ContextFileIndexEntry -Vault $vaultObject.Name -ID $exactId
+                        continue
+                    }
+
+                    try {
+                        $contextInfo = Get-ContextInfoFromFile -Path $contextPath -Vault $vaultObject.Name -ErrorAction Stop
+                        Set-ContextFileIndexEntry -Vault $vaultObject.Name -ID $contextInfo.ID -Path $contextInfo.Path
+                    } catch {
+                        Write-Warning "[$stackPath] - Error reading context file '$contextPath': $($_.Exception.Message)"
+                        Remove-ContextFileIndexEntry -Vault $vaultObject.Name -ID $exactId
+                        continue
+                    }
+
+                    if ($contextInfo.ID -like $exactId) {
+                        $contextInfo
+                    } else {
+                        Remove-ContextFileIndexEntry -Vault $vaultObject.Name -ID $exactId
+                    }
+                }
+
                 continue
             }
-            if ($VerbosePreference -eq 'Continue') {
-                Write-Verbose "[$stackPath] - Processing file: $($file.FullName)"
-                $contextInfo | Format-List | Out-String -Stream | ForEach-Object { Write-Verbose "[$stackPath] $_" }
-            }
-            foreach ($IDItem in $ID) {
-                if ($contextInfo.ID -like $IDItem) {
-                    [ContextInfo]::new($contextInfo)
+
+            $files = Get-ChildItem -Path $vaultObject.Path -Filter *.json -File
+            Write-Verbose "[$stackPath] - Found $($files.Count) context file(s) in vault [$($vaultObject.Name)]."
+
+            foreach ($file in $files) {
+                try {
+                    $contextInfo = Get-ContextInfoFromFile -Path $file.FullName -Vault $vaultObject.Name -ErrorAction Stop
+                    Set-ContextFileIndexEntry -Vault $vaultObject.Name -ID $contextInfo.ID -Path $contextInfo.Path
+                } catch {
+                    Write-Warning "[$stackPath] - Error reading context file '$($file.FullName)': $($_.Exception.Message)"
+                    continue
+                }
+
+                if ($VerbosePreference -eq 'Continue') {
+                    Write-Verbose "[$stackPath] - Processing file: $($file.FullName)"
+                    $contextInfo | Format-List | Out-String -Stream | ForEach-Object { Write-Verbose "[$stackPath] $_" }
+                }
+
+                foreach ($pattern in $idPatterns) {
+                    if ($pattern.IsMatch($contextInfo.ID)) {
+                        $contextInfo
+                        break
+                    }
                 }
             }
         }
