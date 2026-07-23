@@ -38,7 +38,7 @@
         .LINK
         https://psmodule.io/Context/Functions/Convert-ContextObjectToHashtableRecursive
     #>
-    [OutputType([hashtable])]
+    [OutputType([string], [ValueType], [hashtable], [object[]])]
     [CmdletBinding()]
     param (
         # The object to convert.

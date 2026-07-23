@@ -29,7 +29,9 @@ function Assert-ContextSodiumModule {
         $loadedSodium = Get-Module -Name Sodium | Sort-Object Version -Descending | Select-Object -First 1
 
         if ($loadedSodium -and $loadedSodium.Version -lt $minimumVersion) {
-            throw "Loaded Sodium version [$($loadedSodium.Version)] is older than required version [$minimumVersion]. Start a new PowerShell session and import Sodium $minimumVersion."
+            $message = "Loaded Sodium version [$($loadedSodium.Version)] is older than required version [$minimumVersion]. "
+            $message += "Start a new PowerShell session and import Sodium $minimumVersion."
+            throw $message
         }
 
         if (-not $loadedSodium) {

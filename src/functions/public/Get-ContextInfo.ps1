@@ -88,7 +88,10 @@
                 continue
             }
 
-            $wildcardPattern = [System.Management.Automation.WildcardPattern]::new($idItem, [System.Management.Automation.WildcardOptions]::IgnoreCase)
+            $wildcardPattern = [System.Management.Automation.WildcardPattern]::new(
+                $idItem,
+                [System.Management.Automation.WildcardOptions]::IgnoreCase
+            )
             $null = $idPatterns.Add($wildcardPattern)
 
             if ([System.Management.Automation.WildcardPattern]::ContainsWildcardCharacters($idItem)) {

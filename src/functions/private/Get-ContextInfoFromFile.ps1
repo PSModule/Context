@@ -41,11 +41,11 @@ function Get-ContextInfoFromFile {
         }
 
         [ContextInfo]::new([pscustomobject]@{
-            ID      = [string]$rawContextInfo.ID
-            Path    = $Path
-            Vault   = $Vault
-            Context = [string]$rawContextInfo.Context
-        })
+                ID      = [string]$rawContextInfo.ID
+                Path    = $Path
+                Vault   = $Vault
+                Context = [string]$rawContextInfo.Context
+            })
     }
 
     end {
