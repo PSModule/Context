@@ -50,7 +50,7 @@
     param (
         # Hashtable to convert into a structured context object
         [Parameter(Mandatory)]
-        [hashtable] $Hashtable
+        [System.Collections.IDictionary] $Hashtable
     )
 
     begin {
@@ -60,42 +60,61 @@
 
     process {
         try {
-            $result = [pscustomobject]@{}
+            $result = [ordered]@{}
 
             foreach ($key in $Hashtable.Keys) {
                 $value = $Hashtable[$key]
-                Write-Debug "Processing [$key]"
-                Write-Debug "Value: $value"
+
                 if ($null -eq $value) {
-                    Write-Debug "- as null value"
-                    $result | Add-Member -NotePropertyName $key -NotePropertyValue $null
+                    $result[$key] = $null
                     continue
                 }
-                Write-Debug "Type:  $($value.GetType().Name)"
-                if ($value -is [string] -and $value -like '`[SECURESTRING`]*') {
-                    Write-Debug "Converting [$key] as [SecureString]"
-                    $secureValue = $value -replace '^\[SECURESTRING\]', ''
-                    $result | Add-Member -NotePropertyName $key -NotePropertyValue ($secureValue | ConvertTo-SecureString -AsPlainText -Force)
-                } elseif ($value -is [hashtable]) {
-                    Write-Debug "Converting [$key] as [hashtable]"
-                    $result | Add-Member -NotePropertyName $key -NotePropertyValue (Convert-ContextHashtableToObjectRecursive $value)
-                } elseif ($value -is [array]) {
-                    Write-Debug "Converting [$key] as [array], processing elements individually"
-                    $result | Add-Member -NotePropertyName $key -NotePropertyValue @(
-                        $value | ForEach-Object {
-                            if ($_ -is [hashtable]) {
-                                Convert-ContextHashtableToObjectRecursive $_
-                            } else {
-                                $_
-                            }
+
+                if ($value -is [string] -and $value.StartsWith('[SECURESTRING]', [System.StringComparison]::Ordinal)) {
+                    $secureValue = $value.Substring(14)
+                    $result[$key] = ConvertTo-SecureString -String $secureValue -AsPlainText -Force
+                    continue
+                }
+
+                if ($value -is [System.Collections.IDictionary]) {
+                    $result[$key] = Convert-ContextHashtableToObjectRecursive $value
+                    continue
+                }
+
+                if ($value -is [System.Collections.IEnumerable] -and $value -isnot [string]) {
+                    $requiresDeepConversion = $false
+                    foreach ($item in $value) {
+                        if (
+                            $item -is [System.Collections.IDictionary] -or
+                            ($item -is [string] -and $item.StartsWith('[SECURESTRING]', [System.StringComparison]::Ordinal))
+                        ) {
+                            $requiresDeepConversion = $true
+                            break
                         }
-                    )
+                    }
+
+                    if (-not $requiresDeepConversion) {
+                        $result[$key] = @($value)
+                        continue
+                    }
+
+                    $arrayResult = [System.Collections.Generic.List[object]]::new()
+                    foreach ($item in $value) {
+                        if ($item -is [System.Collections.IDictionary]) {
+                            $null = $arrayResult.Add((Convert-ContextHashtableToObjectRecursive $item))
+                        } elseif ($item -is [string] -and $item.StartsWith('[SECURESTRING]', [System.StringComparison]::Ordinal)) {
+                            $null = $arrayResult.Add((ConvertTo-SecureString -String $item.Substring(14) -AsPlainText -Force))
+                        } else {
+                            $null = $arrayResult.Add($item)
+                        }
+                    }
+                    $result[$key] = $arrayResult.ToArray()
                 } else {
-                    Write-Debug "Adding [$key] as a standard value"
-                    $result | Add-Member -NotePropertyName $key -NotePropertyValue $value
+                    $result[$key] = $value
                 }
             }
-            return $result
+
+            return [pscustomobject]$result
         } catch {
             Write-Error $_
             throw 'Failed to convert hashtable to object'
