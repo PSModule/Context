@@ -78,6 +78,10 @@ function Set-ContextFileIndexEntry {
 
         Updates the in-memory index for the given vault.
     #>
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
+        'PSUseShouldProcessForStateChangingFunctions', '',
+        Justification = 'This private helper only mutates an in-memory cache.'
+    )]
     [CmdletBinding()]
     param(
         # The vault name.
@@ -103,7 +107,10 @@ function Set-ContextFileIndexEntry {
 
     process {
         if (-not $script:ContextFileIndexCache.ContainsKey($Vault)) {
-            $script:ContextFileIndexCache[$Vault] = [System.Collections.Generic.Dictionary[string, string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+            $vaultIndex = [System.Collections.Generic.Dictionary[string, string]]::new(
+                [System.StringComparer]::OrdinalIgnoreCase
+            )
+            $script:ContextFileIndexCache[$Vault] = $vaultIndex
         }
 
         $script:ContextFileIndexCache[$Vault][$ID] = $Path
@@ -127,6 +134,10 @@ function Remove-ContextFileIndexEntry {
 
         Removes the mapping for the specified context ID.
     #>
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
+        'PSUseShouldProcessForStateChangingFunctions', '',
+        Justification = 'This private helper only mutates an in-memory cache.'
+    )]
     [CmdletBinding()]
     param(
         # The vault name.
