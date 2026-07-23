@@ -64,6 +64,10 @@ Describe 'ContextVault' {
         It 'Should not throw when setting an existing vault' {
             { Set-ContextVault -Name 'test-vault1' } | Should -Not -Throw
         }
+
+        It 'Should throw for vault names that include path separators' {
+            { Set-ContextVault -Name '..\outside-root' } | Should -Throw
+        }
     }
 
     Context 'Get-ContextVault' {
