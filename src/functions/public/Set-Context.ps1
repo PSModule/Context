@@ -1,5 +1,4 @@
 ﻿#Requires -Modules @{ ModuleName = 'Sodium'; RequiredVersion = '2.2.5' }
-
 function Set-Context {
     <#
         .SYNOPSIS
@@ -76,11 +75,14 @@ function Set-Context {
     begin {
         $stackPath = Get-PSCallStackPath
         Write-Debug "[$stackPath] - Begin"
+        Assert-ContextSodiumModule
     }
 
     process {
         $vaultObject = Set-ContextVault -Name $Vault -PassThru
-        $vaultObject | Format-List | Out-String -Stream | ForEach-Object { Write-Verbose "[$stackPath]   $_" }
+        if ($VerbosePreference -eq 'Continue') {
+            $vaultObject | Format-List | Out-String -Stream | ForEach-Object { Write-Verbose "[$stackPath]   $_" }
+        }
 
         if ($context -is [System.Collections.IDictionary]) {
             $Context = [PSCustomObject]$Context
@@ -93,16 +95,21 @@ function Set-Context {
             throw 'An ID is required, either as a parameter or as a property of the context object.'
         }
 
-        $contextInfo = Get-ContextInfo -ID $ID -Vault $Vault
-        Write-Verbose 'Context info:'
-        $contextInfo | Format-List | Out-String -Stream | ForEach-Object { Write-Verbose "[$stackPath]   $_" }
-        if (-not $contextInfo) {
+        $contextPath = $null
+        $contextIndex = Get-ContextFileIndex -Vault $vaultObject.Name -VaultPath $vaultObject.Path
+        $existingContextPath = $null
+        if ($contextIndex.TryGetValue($ID, [ref]$existingContextPath)) {
+            if (Test-Path -LiteralPath $existingContextPath -PathType Leaf) {
+                Write-Verbose "[$stackPath] - Context [$ID] found in [$Vault]"
+                $contextPath = $existingContextPath
+            } else {
+                Remove-ContextFileIndexEntry -Vault $vaultObject.Name -ID $ID
+            }
+        }
+
+        if ($null -eq $contextPath) {
             Write-Verbose "[$stackPath] - Creating context [$ID] in [$Vault]"
-            $guid = [Guid]::NewGuid().Guid
-            $contextPath = Join-Path -Path $vaultObject.Path -ChildPath "$guid.json"
-        } else {
-            Write-Verbose "[$stackPath] - Context [$ID] found in [$Vault]"
-            $contextPath = $contextInfo.Path
+            $contextPath = [System.IO.Path]::Combine($vaultObject.Path, "$([Guid]::NewGuid().Guid).json")
         }
         Write-Verbose "[$stackPath] - Context path: [$contextPath]"
 
@@ -113,13 +120,16 @@ function Set-Context {
             Path    = $contextPath
             Vault   = $Vault
             Context = ConvertTo-SodiumSealedBox -Message $contextJson -PublicKey $keys.PublicKey
-        } | ConvertTo-Json -Depth 5
-        Write-Verbose 'Content:'
-        $content | ConvertTo-Json -Depth 5 | Out-String -Stream | ForEach-Object { Write-Verbose "[$stackPath]   $_" }
+        } | ConvertTo-Json -Depth 5 -Compress
+        if ($VerbosePreference -eq 'Continue') {
+            Write-Verbose 'Content:'
+            $content | Out-String -Stream | ForEach-Object { Write-Verbose "[$stackPath]   $_" }
+        }
 
         if ($PSCmdlet.ShouldProcess("file: [$contextPath]", 'Set content')) {
             Write-Verbose "[$stackPath] - Setting context [$ID] in vault [$Vault]"
-            Set-Content -Path $contextPath -Value $content
+            [System.IO.File]::WriteAllText($contextPath, $content, [System.Text.UTF8Encoding]::new($false))
+            Set-ContextFileIndexEntry -Vault $vaultObject.Name -ID $ID -Path $contextPath
         }
 
         if ($PassThru) {
