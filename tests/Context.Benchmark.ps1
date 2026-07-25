@@ -1,22 +1,19 @@
 ﻿#Requires -Modules @{ ModuleName = 'Sodium'; RequiredVersion = '2.2.5' }
 
-<#
-    .SYNOPSIS
-    Performance benchmark for the Context module's core crypto operations.
-
-    .DESCRIPTION
-    Measures the time (in microseconds) per iteration for the three operations that every
-    Set-Context / Get-Context call executes: key-pair derivation, seal (encrypt), and
-    open (decrypt). Each scenario is repeated $Iterations times and the median is reported.
-
-    Run from the repo root after importing the module:
-
-        Import-Module ./src -Force
-        pwsh -NoProfile -File tests/Context.Benchmark.ps1
-
-    .OUTPUTS
-    PSCustomObject - one row per scenario with Scenario, Iterations, Median_µs, Min_µs, Max_µs.
-#>
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute(
+    'PSAvoidUsingWriteHost', '',
+    Justification = 'Benchmark scripts should emit visible progress and result output.'
+)]
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute(
+    'PSProvideCommentHelp', '',
+    Scope = 'Function',
+    Target = 'Measure-BenchmarkMeasurement',
+    Justification = 'Private helper function in a test script.'
+)]
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute(
+    'PSUseConsistentIndentation', '',
+    Justification = 'Aligned hashtable literals trigger a false positive in this script.'
+)]
 [CmdletBinding()]
 param(
     # Number of iterations per scenario.
@@ -30,7 +27,7 @@ param(
 
 Set-StrictMode -Version Latest
 
-function Measure-MedianMicroseconds {
+function Measure-BenchmarkMeasurement {
     param(
         [scriptblock] $ScriptBlock,
         [int] $Iterations
@@ -38,13 +35,15 @@ function Measure-MedianMicroseconds {
 
     $samples = [System.Collections.Generic.List[double]]::new($Iterations)
     for ($i = 0; $i -lt $Iterations; $i++) {
-        $sw = [System.Diagnostics.Stopwatch]::StartNew()
+        $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
         & $ScriptBlock | Out-Null
-        $sw.Stop()
-        $samples.Add($sw.Elapsed.TotalMilliseconds * 1000)
+        $stopwatch.Stop()
+        $samples.Add($stopwatch.Elapsed.TotalMilliseconds * 1000)
     }
+
     $sorted = $samples | Sort-Object
-    $mid = [int]($Iterations / 2)
+    $mid = [int] ($Iterations / 2)
+
     return [pscustomobject]@{
         Median_µs = [Math]::Round($sorted[$mid], 1)
         Min_µs    = [Math]::Round(($sorted | Select-Object -First 1), 1)
@@ -52,19 +51,20 @@ function Measure-MedianMicroseconds {
     }
 }
 
-# Ensure bench vault exists and is clean
 try {
     Remove-ContextVault -Name $BenchmarkVault -Confirm:$false -ErrorAction SilentlyContinue
-} catch {}
+} catch {
+    Write-Verbose "Benchmark setup cleanup skipped: $($_.Exception.Message)"
+}
+
 Set-ContextVault -Name $BenchmarkVault | Out-Null
 
 $results = [System.Collections.Generic.List[pscustomobject]]::new()
 
 Write-Host "Running Context benchmark ($Iterations iterations each)..." -ForegroundColor Cyan
 
-# --- Key-pair derivation (New-SodiumKeyPair with seed) ---
 $seed = 'BenchmarkSeedValue'
-$kpStats = Measure-MedianMicroseconds -Iterations $Iterations -ScriptBlock {
+$kpStats = Measure-BenchmarkMeasurement -Iterations $Iterations -ScriptBlock {
     New-SodiumKeyPair -Seed $seed
 }
 $results.Add([pscustomobject]@{
@@ -75,8 +75,7 @@ $results.Add([pscustomobject]@{
     Max_µs     = $kpStats.Max_µs
 })
 
-# --- Seal (encrypt via Set-Context) ---
-$sealStats = Measure-MedianMicroseconds -Iterations $Iterations -ScriptBlock {
+$sealStats = Measure-BenchmarkMeasurement -Iterations $Iterations -ScriptBlock {
     Set-Context -ID 'bench-ctx' -Context @{ Value = 'benchmark' } -Vault $BenchmarkVault
 }
 $results.Add([pscustomobject]@{
@@ -87,9 +86,8 @@ $results.Add([pscustomobject]@{
     Max_µs     = $sealStats.Max_µs
 })
 
-# --- Open (decrypt via Get-Context) ---
 Set-Context -ID 'bench-ctx' -Context @{ Value = 'benchmark' } -Vault $BenchmarkVault
-$openStats = Measure-MedianMicroseconds -Iterations $Iterations -ScriptBlock {
+$openStats = Measure-BenchmarkMeasurement -Iterations $Iterations -ScriptBlock {
     Get-Context -ID 'bench-ctx' -Vault $BenchmarkVault
 }
 $results.Add([pscustomobject]@{
@@ -100,10 +98,11 @@ $results.Add([pscustomobject]@{
     Max_µs     = $openStats.Max_µs
 })
 
-# Cleanup
 try {
     Remove-ContextVault -Name $BenchmarkVault -Confirm:$false -ErrorAction SilentlyContinue
-} catch {}
+} catch {
+    Write-Verbose "Benchmark cleanup skipped: $($_.Exception.Message)"
+}
 
 Write-Host ''
 Write-Host '=== Context Benchmark Results ===' -ForegroundColor Green
