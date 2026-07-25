@@ -68,6 +68,10 @@ Describe 'ContextVault' {
         It 'Should throw for vault names that include path separators' {
             { Set-ContextVault -Name '..\outside-root' } | Should -Throw
         }
+
+        It 'Should throw for vault names that include wildcard characters' {
+            { Set-ContextVault -Name 'vault[1]' } | Should -Throw
+        }
     }
 
     Context 'Get-ContextVault' {

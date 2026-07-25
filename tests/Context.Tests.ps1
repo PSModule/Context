@@ -412,6 +412,27 @@ Describe 'Context' {
             $result | Should -Not -BeNullOrEmpty
             $result.Path | Should -Be $file.FullName
         }
+
+        It 'Should refresh the exact-ID cache before treating a context as missing' {
+            $contextId = 'external-cache-test'
+            $vaultName = 'VaultA'
+            $modulePath = (Get-Module -Name Context | Select-Object -First 1).Path
+
+            $null = Get-ContextInfo -ID $contextId -Vault $vaultName
+
+            $externalWriteScript = @"
+Import-Module -Name '$modulePath' -Force
+Set-Context -ID '$contextId' -Context @{ Value = 'external' } -Vault '$vaultName'
+"@
+            pwsh -NoProfile -Command $externalWriteScript
+
+            $refreshedResult = Get-ContextInfo -ID $contextId -Vault $vaultName
+            $refreshedResult | Should -HaveCount 1
+
+            { Set-Context -ID $contextId -Context @{ Value = 'updated' } -Vault $vaultName } | Should -Not -Throw
+            (Get-ContextInfo -ID $contextId -Vault $vaultName) | Should -HaveCount 1
+            (Get-Context -ID $contextId -Vault $vaultName).Value | Should -Be 'updated'
+        }
     }
 
     Context 'Performance' {

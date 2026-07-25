@@ -120,7 +120,10 @@
                 foreach ($exactId in $exactIds) {
                     $contextPath = $null
                     if (-not $contextIndex.TryGetValue($exactId, [ref]$contextPath)) {
-                        continue
+                        $contextIndex = Get-ContextFileIndex -Vault $vaultObject.Name -VaultPath $vaultObject.Path -Refresh
+                        if (-not $contextIndex.TryGetValue($exactId, [ref]$contextPath)) {
+                            continue
+                        }
                     }
 
                     if (-not (Test-Path -LiteralPath $contextPath -PathType Leaf)) {

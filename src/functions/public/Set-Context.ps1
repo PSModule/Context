@@ -105,6 +105,12 @@ function Set-Context {
             } else {
                 Remove-ContextFileIndexEntry -Vault $vaultObject.Name -ID $ID
             }
+        } else {
+            $contextIndex = Get-ContextFileIndex -Vault $vaultObject.Name -VaultPath $vaultObject.Path -Refresh
+            if ($contextIndex.TryGetValue($ID, [ref]$existingContextPath) -and (Test-Path -LiteralPath $existingContextPath -PathType Leaf)) {
+                Write-Verbose "[$stackPath] - Context [$ID] found in [$Vault] after refreshing cache"
+                $contextPath = $existingContextPath
+            }
         }
 
         if ($null -eq $contextPath) {
