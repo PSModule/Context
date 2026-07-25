@@ -44,8 +44,8 @@ function Set-ContextVault {
             if (
                 [System.IO.Path]::IsPathRooted($vaultName) -or
                 [System.Management.Automation.WildcardPattern]::ContainsWildcardCharacters($vaultName) -or
-                $vaultName.Contains([System.IO.Path]::DirectorySeparatorChar) -or
-                $vaultName.Contains([System.IO.Path]::AltDirectorySeparatorChar) -or
+                $vaultName.Contains('/') -or
+                $vaultName.Contains('\') -or
                 $vaultName -eq '.' -or
                 $vaultName -eq '..' -or
                 $vaultName.IndexOfAny([System.IO.Path]::GetInvalidFileNameChars()) -ge 0
