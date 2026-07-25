@@ -51,6 +51,12 @@ $cryptoResultFile = Join-Path $tempDir 'crypto.json'
 $writeResultFile = Join-Path $tempDir 'write.json'
 $readResultFile = Join-Path $tempDir 'read.json'
 
+$escapedVaultName = $VaultName.Replace("'", "''")
+$escapedContextVersion = "$ContextVersion".Replace("'", "''")
+$escapedCryptoResultFile = $cryptoResultFile.Replace("'", "''")
+$escapedWriteResultFile = $writeResultFile.Replace("'", "''")
+$escapedReadResultFile = $readResultFile.Replace("'", "''")
+
 $pass = 0
 $fail = 0
 
@@ -100,7 +106,7 @@ Import-Module Sodium -RequiredVersion 2.2.2 -Force
     SealedBox22 = `$box22
     Plaintext = `$plaintext
 }
-`$result | ConvertTo-Json | Set-Content '$cryptoResultFile'
+`$result | ConvertTo-Json | Set-Content '$escapedCryptoResultFile'
 Write-Host "Keys derived and message sealed with Sodium 2.2.2"
 "@
 
@@ -162,13 +168,13 @@ Write-Host "--- Part 2a: Write vault + contexts with Context $ContextVersion (So
 $part2aScript = @"
 `$ErrorActionPreference = 'Stop'
 Import-Module Sodium -RequiredVersion 2.2.2 -Force
-Import-Module Context -RequiredVersion $ContextVersion -Force
-Get-ContextVault -Name '$VaultName' -ErrorAction SilentlyContinue | Remove-ContextVault -Confirm:`$false -ErrorAction SilentlyContinue
-Set-ContextVault -Name '$VaultName' | Out-Null
-Set-Context -ID 'compat-simple' -Context @{ Greeting = 'Hello'; Number = 42 } -Vault '$VaultName'
-Set-Context -ID 'compat-secure' -Context @{ Token = ('secret123' | ConvertTo-SecureString -AsPlainText -Force) } -Vault '$VaultName'
-Set-Context -ID 'compat-nulls' -Context @{ Present = 'yes'; Absent = `$null } -Vault '$VaultName'
-`$vault = Get-ContextVault -Name '$VaultName'
+Import-Module Context -RequiredVersion $escapedContextVersion -Force
+Get-ContextVault -Name '$escapedVaultName' -ErrorAction SilentlyContinue | Remove-ContextVault -Confirm:`$false -ErrorAction SilentlyContinue
+Set-ContextVault -Name '$escapedVaultName' | Out-Null
+Set-Context -ID 'compat-simple' -Context @{ Greeting = 'Hello'; Number = 42 } -Vault '$escapedVaultName'
+Set-Context -ID 'compat-secure' -Context @{ Token = ('secret123' | ConvertTo-SecureString -AsPlainText -Force) } -Vault '$escapedVaultName'
+Set-Context -ID 'compat-nulls' -Context @{ Present = 'yes'; Absent = `$null } -Vault '$escapedVaultName'
+`$vault = Get-ContextVault -Name '$escapedVaultName'
 `$shardPath = Join-Path `$vault.Path 'shard'
 `$result = @{
     VaultPath = `$vault.Path
@@ -178,7 +184,7 @@ Set-Context -ID 'compat-nulls' -Context @{ Present = 'yes'; Absent = `$null } -V
     UserName = [System.Environment]::UserName
     ContextFiles = (Get-ChildItem `$vault.Path -Filter '*.json' | Select-Object -ExpandProperty FullName)
 }
-`$result | ConvertTo-Json -Depth 5 | Set-Content '$writeResultFile'
+`$result | ConvertTo-Json -Depth 5 | Set-Content '$escapedWriteResultFile'
 Write-Host "Vault and contexts written with Context $ContextVersion / Sodium 2.2.2"
 "@
 
@@ -205,7 +211,7 @@ foreach (`$file in `$contextFiles) {
     `$plain = ConvertFrom-SodiumSealedBox -SealedBox `$json.Context -PublicKey `$kp.PublicKey -PrivateKey `$kp.PrivateKey
     `$results[`$json.ID] = `$plain | ConvertFrom-Json -AsHashtable
 }
-`$results | ConvertTo-Json -Depth 10 | Set-Content '$readResultFile'
+`$results | ConvertTo-Json -Depth 10 | Set-Content '$escapedReadResultFile'
 Write-Host "Raw vault files decrypted with Sodium 2.2.5"
 "@
 
@@ -227,8 +233,8 @@ Write-Host ''
 try {
     $cleanupCommand = @(
         "Import-Module Sodium -RequiredVersion 2.2.2 -Force; "
-        "Import-Module Context -RequiredVersion $ContextVersion -Force; "
-        "Get-ContextVault -Name '$VaultName' -ErrorAction SilentlyContinue | "
+        "Import-Module Context -RequiredVersion $escapedContextVersion -Force; "
+        "Get-ContextVault -Name '$escapedVaultName' -ErrorAction SilentlyContinue | "
         "Remove-ContextVault -Confirm:`$false -ErrorAction SilentlyContinue"
     ) -join ''
     pwsh -NoProfile -Command $cleanupCommand 2>&1 | Out-Null
