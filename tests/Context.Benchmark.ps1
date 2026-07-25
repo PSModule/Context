@@ -22,10 +22,23 @@ param(
 
     # Vault name used during the benchmark (cleaned up automatically).
     [Parameter()]
-    [string] $BenchmarkVault = 'Benchmark-Perf-Vault'
+    [string] $BenchmarkVault = 'Benchmark-Perf-Vault',
+
+    # Optional module path to import before benchmarking.
+    [Parameter()]
+    [string] $ContextModulePath
 )
 
 Set-StrictMode -Version Latest
+
+if ($ContextModulePath) {
+    Import-Module -Name $ContextModulePath -Force -ErrorAction Stop
+}
+
+$loadedContextModule = Get-Module -Name Context | Sort-Object Version -Descending | Select-Object -First 1
+if (-not $loadedContextModule) {
+    throw 'Import the Context module under test before running this benchmark, or pass -ContextModulePath.'
+}
 
 function Measure-BenchmarkMeasurement {
     param(
@@ -62,6 +75,7 @@ Set-ContextVault -Name $BenchmarkVault | Out-Null
 $results = [System.Collections.Generic.List[pscustomobject]]::new()
 
 Write-Host "Running Context benchmark ($Iterations iterations each)..." -ForegroundColor Cyan
+Write-Host "Benchmarking Context module: $($loadedContextModule.Path)" -ForegroundColor Cyan
 
 $seed = 'BenchmarkSeedValue'
 $kpStats = Measure-BenchmarkMeasurement -Iterations $Iterations -ScriptBlock {

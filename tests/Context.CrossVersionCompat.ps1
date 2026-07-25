@@ -38,7 +38,9 @@
 #>
 [CmdletBinding()]
 param(
-    [string] $VaultName = 'XVersionCompat-Test'
+    [string] $VaultName = 'XVersionCompat-Test',
+
+    [version] $ContextVersion = '8.1.3'
 )
 
 $ErrorActionPreference = 'Stop'
@@ -155,12 +157,12 @@ Assert-Equal '2.2.2 sealed box decryptable by 2.2.5' $c22.Plaintext $c25.Decrypt
 Assert-Equal '2.2.5 roundtrip works' 'Hello from Sodium 2.2.5' $c25.Roundtrip25msg
 
 Write-Host ''
-Write-Host '--- Part 2a: Write vault + contexts with Context 8.1.3 (Sodium 2.2.2) ---' -ForegroundColor Yellow
+Write-Host "--- Part 2a: Write vault + contexts with Context $ContextVersion (Sodium 2.2.2) ---" -ForegroundColor Yellow
 
 $part2aScript = @"
 `$ErrorActionPreference = 'Stop'
 Import-Module Sodium -RequiredVersion 2.2.2 -Force
-Import-Module Context -Force
+Import-Module Context -RequiredVersion $ContextVersion -Force
 Get-ContextVault -Name '$VaultName' -ErrorAction SilentlyContinue | Remove-ContextVault -Confirm:`$false -ErrorAction SilentlyContinue
 Set-ContextVault -Name '$VaultName' | Out-Null
 Set-Context -ID 'compat-simple' -Context @{ Greeting = 'Hello'; Number = 42 } -Vault '$VaultName'
@@ -177,7 +179,7 @@ Set-Context -ID 'compat-nulls' -Context @{ Present = 'yes'; Absent = `$null } -V
     ContextFiles = (Get-ChildItem `$vault.Path -Filter '*.json' | Select-Object -ExpandProperty FullName)
 }
 `$result | ConvertTo-Json -Depth 5 | Set-Content '$writeResultFile'
-Write-Host "Vault and contexts written with Context 8.1.3 / Sodium 2.2.2"
+Write-Host "Vault and contexts written with Context $ContextVersion / Sodium 2.2.2"
 "@
 
 pwsh -NoProfile -Command $part2aScript
@@ -225,7 +227,7 @@ Write-Host ''
 try {
     $cleanupCommand = @(
         "Import-Module Sodium -RequiredVersion 2.2.2 -Force; "
-        "Import-Module Context -Force; "
+        "Import-Module Context -RequiredVersion $ContextVersion -Force; "
         "Get-ContextVault -Name '$VaultName' -ErrorAction SilentlyContinue | "
         "Remove-ContextVault -Confirm:`$false -ErrorAction SilentlyContinue"
     ) -join ''

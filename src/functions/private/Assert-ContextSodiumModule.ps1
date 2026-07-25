@@ -4,8 +4,8 @@ function Assert-ContextSodiumModule {
         Ensures the required Sodium module version is available for context cryptography.
 
         .DESCRIPTION
-        Validates that Sodium v2.2.4 or newer is loaded in the current session.
-        Imports Sodium v2.2.4 if needed, and verifies required commands exist.
+        Validates that Sodium v2.2.5 or newer is loaded in the current session.
+        Imports Sodium v2.2.5 if needed, and verifies required commands exist.
 
         .EXAMPLE
         Assert-ContextSodiumModule
@@ -25,7 +25,7 @@ function Assert-ContextSodiumModule {
             return
         }
 
-        $minimumVersion = [version]'2.2.4'
+        $minimumVersion = [version]'2.2.5'
         $loadedSodium = Get-Module -Name Sodium | Sort-Object Version -Descending | Select-Object -First 1
 
         if ($loadedSodium -and $loadedSodium.Version -lt $minimumVersion) {
