@@ -69,6 +69,16 @@ Describe 'ContextVault' {
             { Set-ContextVault -Name '..\outside-root' } | Should -Throw
         }
 
+        It 'Should throw for vault names that are dot path segments' {
+            { Set-ContextVault -Name '.' } | Should -Throw
+            { Set-ContextVault -Name '..' } | Should -Throw
+        }
+
+        It 'Should throw for vault names that are absolute paths' {
+            $absoluteVaultPath = Join-Path -Path ([System.IO.Path]::GetTempPath()) -ChildPath 'context-absolute-path'
+            { Set-ContextVault -Name $absoluteVaultPath } | Should -Throw
+        }
+
         It 'Should throw for vault names that include wildcard characters' {
             { Set-ContextVault -Name 'vault[1]' } | Should -Throw
         }

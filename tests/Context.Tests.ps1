@@ -255,6 +255,22 @@ Describe 'Context' {
             $results = Get-Context -ID $null -Vault 'VaultA'
             $results | Should -BeNullOrEmpty
         }
+
+        It 'Get-Context - Should warn and skip invalid ciphertext' {
+            $contextId = 'decrypt-error'
+            Set-Context -ID $contextId -Context @{ Value = 'original' } -Vault 'VaultA' | Out-Null
+            $contextInfo = Get-ContextInfo -ID $contextId -Vault 'VaultA'
+            $contextMetadata = Get-Content -LiteralPath $contextInfo.Path -Raw | ConvertFrom-Json
+            $contextMetadata.Context = 'invalid-sealed-box'
+            $contextMetadata | ConvertTo-Json -Depth 5 -Compress | Set-Content -LiteralPath $contextInfo.Path
+
+            $warnings = @()
+            $result = Get-Context -ID $contextId -Vault 'VaultA' -WarningVariable warnings
+
+            $result | Should -BeNullOrEmpty
+            $warnings | Should -Not -BeNullOrEmpty
+            $warnings[0] | Should -Match 'Failed to read or decrypt context file'
+        }
     }
 
     Context 'Remove-Context' {
@@ -432,6 +448,39 @@ Set-Context -ID '$contextId' -Context @{ Value = 'external' } -Vault '$vaultName
             { Set-Context -ID $contextId -Context @{ Value = 'updated' } -Vault $vaultName } | Should -Not -Throw
             (Get-ContextInfo -ID $contextId -Vault $vaultName) | Should -HaveCount 1
             (Get-Context -ID $contextId -Vault $vaultName).Value | Should -Be 'updated'
+        }
+
+        It 'Should recreate a context when the cached file path was deleted' {
+            $contextId = 'deleted-cache-test'
+            $vaultName = 'VaultA'
+
+            Set-Context -ID $contextId -Context @{ Value = 'before-delete' } -Vault $vaultName | Out-Null
+            $originalContextInfo = Get-ContextInfo -ID $contextId -Vault $vaultName
+            Remove-Item -LiteralPath $originalContextInfo.Path -Force
+
+            { Set-Context -ID $contextId -Context @{ Value = 'after-delete' } -Vault $vaultName } | Should -Not -Throw
+
+            $recreatedContextInfo = Get-ContextInfo -ID $contextId -Vault $vaultName
+            $recreatedContextInfo | Should -HaveCount 1
+            $recreatedContextInfo.Path | Should -Not -Be $originalContextInfo.Path
+            (Get-Context -ID $contextId -Vault $vaultName).Value | Should -Be 'after-delete'
+        }
+
+        It 'Should discard cached exact-ID entries when the on-disk metadata ID changes' {
+            $originalId = 'cached-id-mismatch'
+            $updatedId = 'cached-id-renamed'
+
+            Set-Context -ID $originalId -Context @{ Value = 'rename-test' } -Vault 'VaultA' | Out-Null
+            $contextInfo = Get-ContextInfo -ID $originalId -Vault 'VaultA'
+            $contextMetadata = Get-Content -LiteralPath $contextInfo.Path -Raw | ConvertFrom-Json
+            $contextMetadata.ID = $updatedId
+            $contextMetadata | ConvertTo-Json -Depth 5 -Compress | Set-Content -LiteralPath $contextInfo.Path
+
+            (Get-ContextInfo -ID $originalId -Vault 'VaultA') | Should -BeNullOrEmpty
+
+            $renamedContextInfo = Get-ContextInfo -ID $updatedId -Vault 'VaultA'
+            $renamedContextInfo | Should -HaveCount 1
+            $renamedContextInfo.ID | Should -Be $updatedId
         }
     }
 
