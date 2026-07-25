@@ -157,10 +157,10 @@ Write-Host "  2.2.5 roundtrip msg: $($c25.Roundtrip25msg)"
 Write-Host ''
 
 Write-Host '--- Part 1 Assertions ---' -ForegroundColor Yellow
-Assert-Equal 'Key derivation: PublicKey identical' $c22.PublicKey $c25.PublicKey25
-Assert-Equal 'Key derivation: PrivateKey identical' $c22.PrivateKey $c25.PrivateKey25
-Assert-Equal '2.2.2 sealed box decryptable by 2.2.5' $c22.Plaintext $c25.Decrypted22msg
-Assert-Equal '2.2.5 roundtrip works' 'Hello from Sodium 2.2.5' $c25.Roundtrip25msg
+Assert-Equal -Name 'Key derivation: PublicKey identical' -Expected $c22.PublicKey -Actual $c25.PublicKey25
+Assert-Equal -Name 'Key derivation: PrivateKey identical' -Expected $c22.PrivateKey -Actual $c25.PrivateKey25
+Assert-Equal -Name '2.2.2 sealed box decryptable by 2.2.5' -Expected $c22.Plaintext -Actual $c25.Decrypted22msg
+Assert-Equal -Name '2.2.5 roundtrip works' -Expected 'Hello from Sodium 2.2.5' -Actual $c25.Roundtrip25msg
 
 Write-Host ''
 Write-Host "--- Part 2a: Write vault + contexts with Context $ContextVersion (Sodium 2.2.2) ---" -ForegroundColor Yellow
@@ -223,11 +223,11 @@ if (-not (Test-Path $readResultFile)) {
 $rd = Get-Content $readResultFile -Raw | ConvertFrom-Json
 
 Write-Host '--- Part 2 Assertions ---' -ForegroundColor Yellow
-Assert-Equal 'compat-simple: Greeting' 'Hello' $rd.'compat-simple'.Greeting
-Assert-Equal 'compat-simple: Number' '42' $rd.'compat-simple'.Number
-Assert-Equal 'compat-secure: Token (SecureString prefix)' '[SECURESTRING]secret123' $rd.'compat-secure'.Token
-Assert-Equal 'compat-nulls: Present' 'yes' $rd.'compat-nulls'.Present
-Assert-Null 'compat-nulls: Absent' $rd.'compat-nulls'.Absent
+Assert-Equal -Name 'compat-simple: Greeting' -Expected 'Hello' -Actual $rd.'compat-simple'.Greeting
+Assert-Equal -Name 'compat-simple: Number' -Expected '42' -Actual $rd.'compat-simple'.Number
+Assert-Equal -Name 'compat-secure: Token (SecureString prefix)' -Expected '[SECURESTRING]secret123' -Actual $rd.'compat-secure'.Token
+Assert-Equal -Name 'compat-nulls: Present' -Expected 'yes' -Actual $rd.'compat-nulls'.Present
+Assert-Null -Name 'compat-nulls: Absent' -Actual $rd.'compat-nulls'.Absent
 
 Write-Host ''
 try {
