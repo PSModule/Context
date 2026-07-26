@@ -27,6 +27,6 @@ permissions:
 
 jobs:
   Process-PSModule:
-    uses: PSModule/Process-PSModule/.github/workflows/workflow.yml@c89cae01301e45cdcdf60e37fa3b093b051f5106 # coverage missed-path reporting
+    uses: PSModule/Process-PSModule/.github/workflows/workflow.yml@00cd9d1 # coverage missed-path reporting
     secrets:
       APIKey: ${{ secrets.APIKey }}
