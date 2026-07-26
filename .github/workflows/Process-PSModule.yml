@@ -30,3 +30,36 @@ jobs:
     uses: PSModule/Process-PSModule/.github/workflows/workflow.yml@fb1bdb8fefd243292f779d2a856a38db6fe6daf4 # v6.1.13
     secrets:
       APIKey: ${{ secrets.APIKey }}
+
+  Report-CodeCoveragePaths:
+    if: ${{ always() }}
+    needs: Process-PSModule
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download code coverage artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: '*CodeCoverage'
+          path: coverage-artifacts
+          if-no-files-found: warn
+
+      - name: Build code coverage missed-path report
+        shell: pwsh
+        run: >
+          ./.github/scripts/Write-CodeCoverageGapReport.ps1
+          -CoverageRoot 'coverage-artifacts'
+          -ReportOutputPath 'coverage-report'
+          -RunId '${{ github.run_id }}'
+
+      - name: Upload code coverage missed-path report
+        uses: actions/upload-artifact@v4
+        with:
+          name: CodeCoverage-MissedPaths
+          path: coverage-report
+          if-no-files-found: error
