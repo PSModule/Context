@@ -38,7 +38,7 @@
         .LINK
         https://psmodule.io/Context/Functions/Convert-ContextObjectToHashtableRecursive
     #>
-    [OutputType([hashtable])]
+    [OutputType([string], [ValueType], [hashtable], [object[]])]
     [CmdletBinding()]
     param (
         # The object to convert.
@@ -53,52 +53,66 @@
 
     process {
         try {
-            $result = @{}
+            if ($null -eq $Object) {
+                return $null
+            }
 
-            if ($Object -is [hashtable]) {
-                Write-Debug 'Converting [hashtable] to [PSCustomObject]'
-                $Object = [PSCustomObject]$Object
-            } elseif ($Object -is [string] -or $Object -is [int] -or $Object -is [bool]) {
-                Write-Debug 'returning as string'
+            if ($Object -is [datetime]) {
+                return $Object.ToString('o')
+            }
+
+            if ($Object -is [System.Security.SecureString]) {
+                $plainTextValue = [System.Net.NetworkCredential]::new('', $Object).Password
+                return "[SECURESTRING]$plainTextValue"
+            }
+
+            if ($Object -is [string] -or $Object -is [ValueType]) {
                 return $Object
             }
 
-            foreach ($property in $Object.PSObject.Properties) {
-                $name = $property.Name
-                $value = $property.Value
-                Write-Debug "Processing [$name]"
-                Write-Debug "Value: $value"
-                if ($null -eq $value) {
-                    Write-Debug '- as null value'
-                    $result[$property.Name] = $null
-                    continue
+            if ($Object -is [System.Collections.IDictionary]) {
+                $dictionaryResult = @{}
+                foreach ($entry in $Object.GetEnumerator()) {
+                    $dictionaryResult[[string]$entry.Key] = Convert-ContextObjectToHashtableRecursive $entry.Value
                 }
-                Write-Debug "Type:  $($value.GetType().Name)"
-                if ($value -is [datetime]) {
-                    Write-Debug '- as DateTime'
-                    $result[$property.Name] = $value.ToString('o')
-                } elseif ($value -is [string] -or $Object -is [int] -or $Object -is [bool]) {
-                    Write-Debug '- as string, int, bool'
-                    $result[$property.Name] = $value
-                } elseif ($value -is [System.Security.SecureString]) {
-                    Write-Debug '- as SecureString'
-                    $value = $value | ConvertFrom-SecureString -AsPlainText
-                    $result[$property.Name] = "[SECURESTRING]$value"
-                } elseif ($value -is [psobject] -or $value -is [PSCustomObject] -or $value -is [hashtable]) {
-                    Write-Debug '- as PSObject, PSCustomObject or hashtable'
-                    $result[$property.Name] = Convert-ContextObjectToHashtableRecursive $value
-                } elseif ($value -is [System.Collections.IEnumerable]) {
-                    Write-Debug '- as IEnumerable, including arrays and hashtables'
-                    $result[$property.Name] = @(
-                        $value | ForEach-Object {
-                            Convert-ContextObjectToHashtableRecursive $_
-                        }
-                    )
-                } else {
-                    Write-Debug '- as regular value'
-                    $result[$property.Name] = $value
-                }
+                return $dictionaryResult
             }
+
+            if ($Object -is [System.Collections.IEnumerable]) {
+                $requiresDeepConversion = $false
+                foreach ($item in $Object) {
+                    if ($null -eq $item) {
+                        continue
+                    }
+
+                    if (
+                        $item -is [System.Security.SecureString] -or
+                        $item -is [datetime] -or
+                        $item -is [System.Collections.IDictionary] -or
+                        ($item -is [System.Collections.IEnumerable] -and $item -isnot [string]) -or
+                        ($item -isnot [string] -and $item -isnot [ValueType])
+                    ) {
+                        $requiresDeepConversion = $true
+                        break
+                    }
+                }
+
+                if (-not $requiresDeepConversion) {
+                    return @($Object)
+                }
+
+                $listResult = [System.Collections.Generic.List[object]]::new()
+                foreach ($item in $Object) {
+                    $null = $listResult.Add((Convert-ContextObjectToHashtableRecursive $item))
+                }
+                return $listResult.ToArray()
+            }
+
+            $result = @{}
+            foreach ($property in $Object.PSObject.Properties) {
+                $result[$property.Name] = Convert-ContextObjectToHashtableRecursive $property.Value
+            }
+
             return $result
         } catch {
             Write-Error $_

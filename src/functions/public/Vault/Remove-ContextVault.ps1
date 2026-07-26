@@ -41,6 +41,10 @@
                         Write-Verbose "Removing ContextVault [$($vault.Name)] at path [$($vault.Path)]"
                         if ($PSCmdlet.ShouldProcess("ContextVault: [$($vault.Name)]", 'Remove')) {
                             Remove-Item -Path $vault.Path -Recurse -Force
+                            Clear-ContextFileIndex -Vault $vault.Name
+                            if ($null -ne $script:ContextVaultKeyPairCache) {
+                                $null = $script:ContextVaultKeyPairCache.Remove($vault.Name)
+                            }
                             Write-Verbose "ContextVault [$($vault.Name)] removed successfully."
                         }
                     }
