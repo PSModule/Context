@@ -38,20 +38,35 @@ function Set-ContextVault {
 
     process {
         foreach ($vaultName in $Name) {
+            if ([string]::IsNullOrWhiteSpace($vaultName)) {
+                throw 'Vault name cannot be null, empty, or whitespace.'
+            }
+            if (
+                [System.IO.Path]::IsPathRooted($vaultName) -or
+                [System.Management.Automation.WildcardPattern]::ContainsWildcardCharacters($vaultName) -or
+                $vaultName.Contains('/') -or
+                $vaultName.Contains('\') -or
+                $vaultName -eq '.' -or
+                $vaultName -eq '..' -or
+                $vaultName.IndexOfAny([System.IO.Path]::GetInvalidFileNameChars()) -ge 0
+            ) {
+                throw "Vault name '$vaultName' is invalid. Use a simple folder name without path separators or wildcard characters."
+            }
+
             Write-Verbose "Processing vault: $vaultName"
 
             $vaultPath = Join-Path -Path $script:Config.RootPath -ChildPath $vaultName
             if (-not (Test-Path $vaultPath)) {
-                Write-Verbose "Creating new vault [$($vault.Name)]"
+                Write-Verbose "Creating new vault [$vaultName]"
                 if ($PSCmdlet.ShouldProcess("context vault folder $vaultName", 'Set')) {
                     $null = New-Item -Path $vaultPath -ItemType Directory -Force
                 }
             }
             $fileShardPath = Join-Path -Path $vaultPath -ChildPath $script:Config.ShardFileName
             if (-not (Test-Path $fileShardPath)) {
-                Write-Verbose "Generating encryption keys for vault [$($vault.Name)]"
+                Write-Verbose "Generating encryption keys for vault [$vaultName]"
                 if ($PSCmdlet.ShouldProcess("shard file $fileShardPath", 'Set')) {
-                    Set-Content -Path $fileShardPath -Value ([System.Guid]::NewGuid().ToString())
+                    [System.IO.File]::WriteAllText($fileShardPath, [System.Guid]::NewGuid().ToString(), [System.Text.UTF8Encoding]::new($false))
                 }
             }
 

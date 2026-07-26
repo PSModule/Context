@@ -1,4 +1,4 @@
-﻿#Requires -Modules @{ ModuleName = 'Pester'; RequiredVersion = '5.8.0'; GUID = 'a699dea5-2c73-4616-a270-1f7abb777e71' }
+﻿#Requires -Modules @{ ModuleName = 'Pester'; ModuleVersion = '6.0.1'; MaximumVersion = '6.*' }
 
 [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
     'PSUseDeclaredVarsMoreThanAssignments', '',
@@ -63,6 +63,24 @@ Describe 'ContextVault' {
 
         It 'Should not throw when setting an existing vault' {
             { Set-ContextVault -Name 'test-vault1' } | Should -Not -Throw
+        }
+
+        It 'Should throw for vault names that include path separators' {
+            { Set-ContextVault -Name '..\outside-root' } | Should -Throw
+        }
+
+        It 'Should throw for vault names that are dot path segments' {
+            { Set-ContextVault -Name '.' } | Should -Throw
+            { Set-ContextVault -Name '..' } | Should -Throw
+        }
+
+        It 'Should throw for vault names that are absolute paths' {
+            $absoluteVaultPath = Join-Path -Path ([System.IO.Path]::GetTempPath()) -ChildPath 'context-absolute-path'
+            { Set-ContextVault -Name $absoluteVaultPath } | Should -Throw
+        }
+
+        It 'Should throw for vault names that include wildcard characters' {
+            { Set-ContextVault -Name 'vault[1]' } | Should -Throw
         }
     }
 

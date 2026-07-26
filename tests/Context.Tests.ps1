@@ -1,4 +1,4 @@
-﻿#Requires -Modules @{ ModuleName = 'Pester'; RequiredVersion = '5.8.0'; GUID = 'a699dea5-2c73-4616-a270-1f7abb777e71' }
+﻿#Requires -Modules @{ ModuleName = 'Pester'; ModuleVersion = '6.0.1'; MaximumVersion = '6.*' }
 
 [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
     'PSUseDeclaredVarsMoreThanAssignments', '',
@@ -255,6 +255,22 @@ Describe 'Context' {
             $results = Get-Context -ID $null -Vault 'VaultA'
             $results | Should -BeNullOrEmpty
         }
+
+        It 'Get-Context - Should warn and skip invalid ciphertext' {
+            $contextId = 'decrypt-error'
+            Set-Context -ID $contextId -Context @{ Value = 'original' } -Vault 'VaultA' | Out-Null
+            $contextInfo = Get-ContextInfo -ID $contextId -Vault 'VaultA'
+            $contextMetadata = Get-Content -LiteralPath $contextInfo.Path -Raw | ConvertFrom-Json
+            $contextMetadata.Context = 'invalid-sealed-box'
+            $contextMetadata | ConvertTo-Json -Depth 5 -Compress | Set-Content -LiteralPath $contextInfo.Path
+
+            $warnings = @()
+            $result = Get-Context -ID $contextId -Vault 'VaultA' -WarningVariable warnings
+
+            $result | Should -BeNullOrEmpty
+            $warnings | Should -Not -BeNullOrEmpty
+            $warnings[0] | Should -Match 'Failed to read or decrypt context file'
+        }
     }
 
     Context 'Remove-Context' {
@@ -370,6 +386,13 @@ Describe 'Context' {
             $result.ID | Should -Be 'TestID1'
         }
 
+        It 'Should return matching ID from all vaults when vault is not specified' {
+            $results = Get-ContextInfo -ID 'TestID1'
+            $results | Should -HaveCount 2
+            $results.Vault | Should -Contain 'VaultA'
+            $results.Vault | Should -Contain 'VaultB'
+        }
+
         It 'Should return multiple contexts matching wildcard ID in VaultA' {
             $results = Get-ContextInfo -ID 'TestID*' -Vault 'VaultA'
             $results | Should -HaveCount 3
@@ -391,6 +414,158 @@ Describe 'Context' {
             $results.ID | Should -Contain 'TestID1'
             $results.ID | Should -Contain 'TestID2'
             $results.ID | Should -Not -Contain 'TestID3'
+        }
+
+        It 'Should use the metadata file path on disk when Path value is tampered' {
+            $vaultPath = (Get-ContextVault -Name 'VaultA').Path
+            $file = Get-ChildItem -Path $vaultPath -Filter *.json -File | Select-Object -First 1
+            $contextInfo = Get-Content -Path $file.FullName -Raw | ConvertFrom-Json
+            $contextInfo.Path = 'C:\tampered\path.json'
+            $contextInfo | ConvertTo-Json -Depth 5 -Compress | Set-Content -Path $file.FullName
+
+            $result = Get-ContextInfo -ID $contextInfo.ID -Vault 'VaultA'
+
+            $result | Should -Not -BeNullOrEmpty
+            $result.Path | Should -Be $file.FullName
+        }
+
+        It 'Should refresh the exact-ID cache before treating a context as missing' {
+            $contextId = 'external-cache-test'
+            $vaultName = 'VaultA'
+            $modulePath = (Get-Module -Name Context | Select-Object -First 1).Path
+
+            $null = Get-ContextInfo -ID $contextId -Vault $vaultName
+
+            $externalWriteScript = @"
+Import-Module -Name '$modulePath' -Force
+Set-Context -ID '$contextId' -Context @{ Value = 'external' } -Vault '$vaultName'
+"@
+            pwsh -NoProfile -Command $externalWriteScript
+
+            $refreshedResult = Get-ContextInfo -ID $contextId -Vault $vaultName
+            $refreshedResult | Should -HaveCount 1
+
+            { Set-Context -ID $contextId -Context @{ Value = 'updated' } -Vault $vaultName } | Should -Not -Throw
+            (Get-ContextInfo -ID $contextId -Vault $vaultName) | Should -HaveCount 1
+            (Get-Context -ID $contextId -Vault $vaultName).Value | Should -Be 'updated'
+        }
+
+        It 'Should recreate a context when the cached file path was deleted' {
+            $contextId = 'deleted-cache-test'
+            $vaultName = 'VaultA'
+
+            Set-Context -ID $contextId -Context @{ Value = 'before-delete' } -Vault $vaultName | Out-Null
+            $originalContextInfo = Get-ContextInfo -ID $contextId -Vault $vaultName
+            Remove-Item -LiteralPath $originalContextInfo.Path -Force
+
+            { Set-Context -ID $contextId -Context @{ Value = 'after-delete' } -Vault $vaultName } | Should -Not -Throw
+
+            $recreatedContextInfo = Get-ContextInfo -ID $contextId -Vault $vaultName
+            $recreatedContextInfo | Should -HaveCount 1
+            $recreatedContextInfo.Path | Should -Not -Be $originalContextInfo.Path
+            (Get-Context -ID $contextId -Vault $vaultName).Value | Should -Be 'after-delete'
+        }
+
+        It 'Should discard cached exact-ID entries when the on-disk metadata ID changes' {
+            $originalId = 'cached-id-mismatch'
+            $updatedId = 'cached-id-renamed'
+
+            Set-Context -ID $originalId -Context @{ Value = 'rename-test' } -Vault 'VaultA' | Out-Null
+            $contextInfo = Get-ContextInfo -ID $originalId -Vault 'VaultA'
+            $contextMetadata = Get-Content -LiteralPath $contextInfo.Path -Raw | ConvertFrom-Json
+            $contextMetadata.ID = $updatedId
+            $contextMetadata | ConvertTo-Json -Depth 5 -Compress | Set-Content -LiteralPath $contextInfo.Path
+
+            (Get-ContextInfo -ID $originalId -Vault 'VaultA') | Should -BeNullOrEmpty
+
+            $renamedContextInfo = Get-ContextInfo -ID $updatedId -Vault 'VaultA'
+            $renamedContextInfo | Should -HaveCount 1
+            $renamedContextInfo.ID | Should -Be $updatedId
+        }
+    }
+
+    Context 'Performance' {
+        BeforeAll {
+            $perfVault = 'Perf-Heavy'
+            Get-ContextVault -Name $perfVault | Remove-ContextVault -Confirm:$false
+            Set-ContextVault -Name $perfVault | Out-Null
+        }
+
+        AfterAll {
+            Get-ContextVault -Name 'Perf-Heavy' | Remove-ContextVault -Confirm:$false
+        }
+
+        It 'Handles heavy set/get workload with large payloads' {
+            $perfVault = 'Perf-Heavy'
+            $contextCount = 150
+            $payload = [PSCustomObject]@{
+                Username         = 'perf-user'
+                AuthToken        = 'token-123' | ConvertTo-SecureString -AsPlainText -Force
+                LoginTime        = Get-Date
+                IsTwoFactorAuth  = $true
+                TwoFactorMethods = @('TOTP', 'SMS', 'WebAuthN')
+                Repositories     = @(
+                    [PSCustomObject]@{ Name = 'Repo1'; IsPrivate = $true; Stars = 42; Languages = @('PowerShell', 'C#') },
+                    [PSCustomObject]@{ Name = 'Repo2'; IsPrivate = $false; Stars = 130; Languages = @('C#', 'HTML', 'CSS') }
+                )
+                UserPreferences  = [PSCustomObject]@{
+                    Theme         = 'dark'
+                    DefaultBranch = 'main'
+                    Notifications = [PSCustomObject]@{ Email = $true; Push = $false; SMS = $true }
+                }
+                SessionMetaData  = [PSCustomObject]@{
+                    SessionID = 'sess_perf'
+                    Device    = 'Windows-PC'
+                    Location  = [PSCustomObject]@{ Country = 'NO'; City = 'Bergen' }
+                }
+                LargeArray       = 1..500
+            }
+
+            $setWatch = [System.Diagnostics.Stopwatch]::StartNew()
+            foreach ($i in 1..$contextCount) {
+                Set-Context -ID "perf-$i" -Context $payload -Vault $perfVault | Out-Null
+            }
+            $setWatch.Stop()
+
+            $getWatch = [System.Diagnostics.Stopwatch]::StartNew()
+            $contexts = Get-Context -ID 'perf-*' -Vault $perfVault
+            $getWatch.Stop()
+
+            Write-Host ("Performance workload: set={0}ms get={1}ms count={2}" -f [math]::Round($setWatch.Elapsed.TotalMilliseconds, 2), [math]::Round($getWatch.Elapsed.TotalMilliseconds, 2), $contexts.Count)
+
+            Should-Be $contextCount $contexts.Count
+            $setWatch.Elapsed.TotalSeconds | Should-BeLessThan 90
+            $getWatch.Elapsed.TotalSeconds | Should-BeLessThan 20
+        }
+
+        It 'Handles heavy context roundtrips with unique IDs' {
+            $perfVault = 'Perf-Heavy'
+            $roundtripCount = 100
+            $payload = [PSCustomObject]@{
+                UserName = 'perf-json'
+                Token    = 'json-token' | ConvertTo-SecureString -AsPlainText -Force
+                Created  = Get-Date
+                Flags    = @($true, $false, $true)
+                Nested   = [PSCustomObject]@{
+                    Names = @('alpha', 'beta', 'gamma')
+                    Data  = @(
+                        [PSCustomObject]@{ Key = 'k1'; Value = 1 },
+                        [PSCustomObject]@{ Key = 'k2'; Value = 2 }
+                    )
+                }
+                Values   = 1..1000
+            }
+
+            $watch = [System.Diagnostics.Stopwatch]::StartNew()
+            foreach ($i in 1..$roundtripCount) {
+                Set-Context -ID "json-$i" -Context $payload -Vault $perfVault | Out-Null
+                $obj = Get-Context -ID "json-$i" -Vault $perfVault
+                Should-Be "json-$i" $obj.ID
+            }
+            $watch.Stop()
+
+            Write-Host ("Performance context roundtrip: count={0} total={1}ms" -f $roundtripCount, [math]::Round($watch.Elapsed.TotalMilliseconds, 2))
+            $watch.Elapsed.TotalSeconds | Should-BeLessThan 90
         }
     }
 }
